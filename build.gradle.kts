@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.3.0"
+    application
 }
 
 group = "edu.teamcandy"
@@ -11,6 +12,10 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+}
+
+application {
+    mainClass = "edu.teamcandy.MainKt"
 }
 
 kotlin {
