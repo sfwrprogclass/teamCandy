@@ -2,7 +2,11 @@ package edu.teamcandy.models
 
 data class Movie(
     // Title of the movie
-    val name: String,
+    var name: String,
     // The duration of the movie
-    val durationMinutes: Int
+    var durationMinutes: Int,
+    // Rating of the movie
+    var rating: String,
+    // Description of the movie
+    var description: String
 )
