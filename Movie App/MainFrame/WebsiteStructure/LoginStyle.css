@@ -1,0 +1,45 @@
+/*This is the login Box (it will later be moved into another page)*/
+.LoginContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+    background: #2f3031;
+    margin-top: 10px;
+}
+
+.login-box {
+    background: #4f5051;
+    padding: 30px;
+    border-radius: 10px;
+    width: 300px;
+    color: #e6e6e6;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-box h2 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.login-box input {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+}
+
+.login-box button {
+    padding: 10px;
+    background: #6a6b6c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.login-box button:hover {
+    background: #7a7b7c;
+}

@@ -1,0 +1,97 @@
+/*This is the whole websites rules*/
+body {
+    font-family: Arial, sans-serif;
+    background-color: #0000;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+/*This is the header tab (the very top box)*/
+.header {
+    background-color: #4f5051;
+    padding: 17px;
+}
+
+.f-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #4f5051;
+    padding: 50px;
+    color: #e6e6e6;
+    font-size: 24px;
+    border-bottom: 1px solid #4f5051;
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    transition: transform 0.1s ease-out;
+}
+/*This is the box link*/
+.Button {
+    width: 100px;
+    height: 30px;
+    background: #4f5051;
+    color: #e6e6e6;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+.Button:hover {
+    background: #6a6b6c;
+    transform: scale(1.05);
+}
+/*Container*/
+.LocationContainer {
+    margin-top: 30px;
+}
+
+/*This is the movie section where it will show case images of the movie*/
+.MovieContainer{
+    margin-top: 110px;
+}
+
+h1 {
+    color: #4f5051;
+}
+.section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #e6e6e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.video-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/*This is the bottom Footer*/
+
+footer {
+    background-color: #e6e6e6;
+    color: #333333;
+    text-align: center;
+    padding: 30px;
+}
+footer a {
+    color: #333333;
+    margin: 0 15px;
+    text-decoration: none;
+    font-weight: bold;
+}
+footer a:hover {
+    text-decoration: underline;
+}
+.footer-bottom {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333333;
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eclipse-userlibraries>
+  <library name="KotlinJavaRuntime">
+    <archive path="C:/Users/Owner/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib/2.3.0/kotlin-stdlib-2.3.0.jar" />
+    <archive path="C:/Users/Owner/.m2/repository/org/jetbrains/annotations/13.0/annotations-13.0.jar" />
+  </library>
+</eclipse-userlibraries>
+
