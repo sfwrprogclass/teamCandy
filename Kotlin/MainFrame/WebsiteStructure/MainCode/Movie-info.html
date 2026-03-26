@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie information</title>
+    <link rel="stylesheet" href="MainStyles.css">
+</head>
+<body>
+
+<div class="header">
+    <header class="f-header" id="moving-header">
+        Movie.
+    </header>
+</div>
+
+<div id="movieContent" style="padding: 20px;"></div>
+
+<script type="module">
+    import { movies } from "./MovieInformation.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const movieName = params.get("movie");
+
+    const movie = movies[movieName];
+
+    const content = document.getElementById("movieContent");
+
+    if (movie) {
+        content.innerHTML = `
+            <h1>${movie.title}</h1>
+            <img src="${movie.poster}" style="width:250px; border-radius:12px;" alt="">
+            <p><strong>Description:</strong> ${movie.description}</p>
+            <p><strong>Where to watch:</strong> ${movie.location}</p>
+        `;
+    } else {
+        content.innerHTML = "<h2>This Movie is no longer Available.</h2>";
+    }
+
+</script>
+<div style="margin-bottom: 20px;">
+    <a href="Website.veiw.html"
+       style="padding: 10px 20px; background: #333; color: white; text-decoration: none; border-radius: 6px;">
+        ⬅ Back to Main Website
+    </a>
+</div>
+</body>
+</html>

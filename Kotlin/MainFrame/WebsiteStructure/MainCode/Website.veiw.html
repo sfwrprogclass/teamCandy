@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Team Candy Movie Project</title>
+    <link rel="stylesheet" href="MainStyles.css">
+</head>
+<body>
+<div class="header">
+    <header class="f-header" id="moving-header">
+        Movie.
+    </header>
+</div>
+ <div class="MovieContainer">
+     <section style="padding: 40px; text-align: center;">
+         <img src="Images/Movie.png" alt="Movie Poster" class="movie-poster" data-movie="Movie" style="width: 250px; border-radius: 12px; cursor: pointer;" >
+         <h2>Movie</h2>
+     </section>
+ </div>
+<footer>
+    <div>
+        <a href="Login/MovieLoginPage.html" class="Button">
+            Login Page
+        </a>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2026 (Movie Website). All rights reserved.</p>
+    </div>
+</footer>
+<script>
+    document.querySelectorAll('.movie-poster').forEach(poster => {
+        poster.addEventListener('click', () => {
+            const movieName = poster.getAttribute('data-movie');
+            window.location.href = `Movie-info.html?movie=${encodeURIComponent(movieName)}`;
+        });
+    });
+</script>
+</body>
+</html>

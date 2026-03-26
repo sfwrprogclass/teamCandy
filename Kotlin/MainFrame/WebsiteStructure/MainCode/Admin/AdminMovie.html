@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Control Page</title>
+</head>
+<body>
+
+<h1>Admin Control Panel</h1>
+<form id="movieForm">
+
+    <label for="title">Movie Title</label><br>
+    <input id="title" placeholder="Movie Title" required><br><br>
+
+    <label for="duration">Duration (minutes)</label><br>
+    <input id="duration" type="number" placeholder="Duration" required><br><br>
+
+    <label for="description">Description</label><br>
+    <input id="description" placeholder="Description" required><br><br>
+
+    <label for="theater">Theater</label><br>
+    <input id="theater" placeholder="Theater" required><br><br>
+
+    <!-- NEW: Image Upload -->
+    <label for="poster">Movie Poster</label><br>
+    <input id="poster" type="file" accept="image/*"><br><br>
+
+    <!-- Preview -->
+    <img id="preview" style="width:150px; display:none; border-radius:8px;"><br><br>
+
+    <button type="submit">Add Movie</button>
+    <br>
+</form>
+<script>
+    // Show image
+    document.getElementById("poster").addEventListener("change", function() {
+        const file = this.files[0];
+        if (file) {
+            const preview = document.getElementById("preview");
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
+        }
+    });
+
+    document.getElementById("movieForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const posterInput = document.getElementById("poster");
+        const posterFile = posterInput.files[0];
+
+        // Use filename only for now
+        const posterName = posterFile ? posterFile.name : "default.png";
+
+        const movie = {
+            title: document.getElementById("title").value,
+            durationMinutes: parseInt(document.getElementById("duration").value),
+            description: document.getElementById("description").value,
+            theater: document.getElementById("theater").value,
+            poster: posterName
+        };
+
+        await fetch("http://localhost:8080/addMovie", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(movie)
+        });
+
+        alert("Movie added! Make sure to place the image in your Images folder.");
+
+        document.getElementById("movieForm").reset();
+        document.getElementById("preview").style.display = "none";
+    });
+</script>
+<br>
+<!-- Back to Main Website Button -->
+<div style="margin-bottom: 20px;">
+    <a href="../Website.veiw.html"
+       style="padding: 10px 20px; background: #333; color: white; text-decoration: none; border-radius: 6px;">
+        ⬅ Back to Main Website
+    </a>
+</div>
+</body>
+</html>
