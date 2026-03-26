@@ -1,4 +1,4 @@
-package edu.teamcandy
+ package edu.teamcandy
 
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Theater
