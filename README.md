@@ -56,37 +56,39 @@ On the target machine, unzip and run the appropriate script from the `bin/` fold
 
 ## Usage
 
-Once running, the application will prompt you interactively:
+Once running, you can choose between the **Backend (Employee)** and **Customer Website** by running different main classes or interacting with the menu in `Main.kt`.
 
-```
-Welcome to Candy Theaters!
+### Backend Mode (Employee)
+Run `edu.teamcandy.MainKt`. The backend allows employees to:
+- **Schedule Showtimes:** Select a movie and enter a start time.
+- **Sell Tickets:** Select a showtime and a seat (e.g., A1) to sell a ticket in-person.
 
-Would you like to schedule a showtime? (Y or N):
-```
+### Customer Website
+Run `edu.teamcandy.CustomerWebsiteKt`. The website allows customers to:
+- **View Schedule:** See all upcoming showtimes across all theaters.
+- **Search Movies:** Search by **Title**, **Cast**, or **Genre**.
+- **Book Tickets:** Select a movie, a showtime, and a seat to purchase a ticket online.
 
-- Enter movie title, duration (in minutes), and start time in `yyyy-MM-dd HH:mm` format
-- Repeat to schedule additional showtimes
-- Enter `N` when done to print the full schedule
+## Movie Database
+
+The movie database is managed in `src/main/kotlin/repositories/MovieRepository.kt`. Each movie now includes:
+- **Title and Duration**
+- **Cast List**
+- **Genres**
+- **Description**
+
+## Seating and Theaters
+
+- Each theater (managed in `Theater.kt`) has a default seating capacity (e.g., 5 rows, 10 seats per row).
+- Every showtime has its own unique seating chart.
+- Seats are identified by a Row (A-E) and Number (1-10), e.g., `A1`.
+- Occupied seats are marked with `X`, while available seats are marked with `.`.
 
 ## Verification
 
-After deploying, follow these steps to confirm the system is working correctly:
-
-1. Start the application using the run command above
-2. When prompted, enter `Y` to schedule a showtime
-3. Enter the following values:
-   - Movie title: `The Matrix`
-   - Duration: `136`
-   - Start time: `2026-03-10 18:00`
-4. When asked to schedule another, enter `N`
-
-**Expected output:**
-
-```
-Thank you!
-
-Showtimes for Theater 1:
-The Matrix - starts at 03/10/2026 06:00 PM, ends at 03/10/2026 08:16 PM
-```
-
-If you see the showtime listed with correct start and end times, the system is working correctly.
+1. Run the Backend (`Main.kt`).
+2. Select `1` to schedule a showtime.
+3. Choose `The Matrix` and enter `2026-03-10 18:00`.
+4. Select `2` to sell a ticket.
+5. Choose the Matrix showtime and enter seat `A1`.
+6. Confirm the "Ticket sold successfully" message appears.

@@ -1,8 +1,8 @@
 package edu.teamcandy.services
 
 import edu.teamcandy.models.Movie
-import edu.teamcandy.models.Showtime
 import edu.teamcandy.models.Theater
+import edu.teamcandy.utils.Constants
 import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,45 +16,37 @@ class SchedulerTest {
 
     @Test
     fun `scheduleShowtime returns success message when theater is empty`() {
-        val showtime = Showtime(movie = movie, startTime = baseTime)
+        val result = scheduler.scheduleShowtime(movie, baseTime)
 
-        val result = scheduler.scheduleShowtime(showtime)
-
-        assertEquals("Test Movie scheduled successfully: from 03/01/2026 10:00 AM to 03/01/2026 12:15 PM!", result)
+        val expected = "Test Movie scheduled successfully: from 03/01/2026 10:00 AM to 03/01/2026 12:15 PM!"
+        assertEquals(expected, result)
     }
 
     @Test
     fun `scheduleShowtime returns success when new showtime does not overlap`() {
-        val firstShowtime = Showtime(movie = movie, startTime = baseTime)
-        scheduler.scheduleShowtime(firstShowtime)
+        scheduler.scheduleShowtime(movie, baseTime)
 
-        val secondShowtime = Showtime(movie = movie, startTime = baseTime.plusHours(3))
+        val startTime = baseTime.plusHours(3)
+        val result = scheduler.scheduleShowtime(movie, startTime)
 
-        val result = scheduler.scheduleShowtime(secondShowtime)
-
-        assertEquals("Test Movie scheduled successfully: from 03/01/2026 01:00 PM to 03/01/2026 03:15 PM!", result)
+        val expected = "Test Movie scheduled successfully: from 03/01/2026 01:00 PM to 03/01/2026 03:15 PM!"
+        assertEquals(expected, result)
     }
 
     @Test
     fun `scheduleShowtime returns error when new showtime overlaps an existing one`() {
-        val firstShowtime = Showtime(movie = movie, startTime = baseTime)
-        scheduler.scheduleShowtime(firstShowtime)
+        scheduler.scheduleShowtime(movie, baseTime)
 
-        val overlappingShowtime = Showtime(movie = movie, startTime = baseTime.plusHours(1))
-
-        val result = scheduler.scheduleShowtime(overlappingShowtime)
+        val result = scheduler.scheduleShowtime(movie, baseTime.plusHours(1))
 
         assertEquals("This showtime overlapped with another showtime, please try again.", result)
     }
 
     @Test
     fun `scheduleShowtime returns success when new showtime starts exactly when existing one ends`() {
-        val firstShowtime = Showtime(movie = movie, startTime = baseTime)
-        scheduler.scheduleShowtime(firstShowtime)
+        scheduler.scheduleShowtime(movie, baseTime)
 
-        val adjacentShowtime = Showtime(movie = movie, startTime = baseTime.plusMinutes(135))
-
-        val result = scheduler.scheduleShowtime(adjacentShowtime)
+        val result = scheduler.scheduleShowtime(movie, baseTime.plusMinutes(135))
 
         assertEquals("Test Movie scheduled successfully: from 03/01/2026 12:15 PM to 03/01/2026 02:30 PM!", result)
     }

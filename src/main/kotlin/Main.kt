@@ -3,61 +3,91 @@
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Theater
 import edu.teamcandy.models.Showtime
+import edu.teamcandy.repositories.MovieRepository
 import edu.teamcandy.services.Scheduler
+import edu.teamcandy.services.BookingService
+import edu.teamcandy.utils.Constants
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 fun main() {
-    println("Welcome to Candy Theaters!")
-    println("")
-
-    // Instantiate theater and scheduler
+    val movieRepository = MovieRepository()
     val theaterOne = Theater(1)
     val scheduler = Scheduler(theaterOne)
+    val bookingService = BookingService()
 
-    // TODO: Move to somewhere we can use this across different files for displaying
-    //  dates and only have to define it once
-    // Time formatter for listing showtimes
-    val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm a")
+    while (true) {
+        println("\nWelcome to Candy Theaters Backend!")
+        println("1. Schedule a showtime")
+        println("2. Sell a ticket (In-Person)")
+        println("3. Exit")
+        print("Select an option: ")
 
-    // TODO: Add handling for invalid inputs
-    print("Would you like to schedule a showtime? (Y or N): ")
-    var scheduleShowtime = readln().trim().lowercase() == "y"
+        when (readln().trim()) {
+            "1" -> {
+                val movies = movieRepository.getAllMovies()
+                println("\nAvailable Movies:")
+                movies.forEachIndexed { index, movie -> println("${index + 1}. ${movie.name} (${movie.durationMinutes} min)") }
 
-    while (scheduleShowtime) {
-        // Get the movie info
-        print("Enter a movie title: ")
-        val movieName = readln()
+                print("Enter movie number or title: ")
+                val movieInput = readln().trim()
+                val selectedMovie = if (movieInput.toIntOrNull() != null) {
+                    val index = movieInput.toInt() - 1
+                    if (index in movies.indices) movies[index] else null
+                } else {
+                    movieRepository.findMovieByName(movieInput)
+                }
 
-        print("Enter the movie duration in minutes: ")
-        val movieDuration = readln().toInt()
+                if (selectedMovie == null) {
+                    println("Movie not found.")
+                    continue
+                }
 
-        print("Enter showtime, time should be in 24 hour format (yyyy-MM-dd HH:mm): ")
-        val startTimeInput = readln()
-        val startTime = LocalDateTime.parse(startTimeInput, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                print("Enter showtime (yyyy-MM-dd HH:mm): ")
+                val startTimeInput = readln()
+                val startTime = try {
+                    LocalDateTime.parse(startTimeInput, Constants.INPUT_FORMATTER)
+                } catch (e: DateTimeParseException) {
+                    println("Invalid date format.")
+                    continue
+                }
 
-        val scheduleMessage = scheduler.scheduleShowtime(Showtime(Movie(movieName, movieDuration), startTime))
-
-        // Display success or error message after scheduling showtime
-        println(scheduleMessage)
-        println("")
-
-        print("Would you like to schedule another showtime? (Y or N): ")
-        scheduleShowtime = readln().trim().lowercase() == "y"
-    }
-
-    println("Thank you!")
-    println("")
-
-
-    if (theaterOne.showtimeList.isEmpty()) {
-        println("No showtimes scheduled for Theater ${theaterOne.number}")
-        return
-    }
-    else{
-        println("Showtimes for Theater ${theaterOne.number}:")
-        for (showtime in theaterOne.showtimeList) {
-            println("${showtime.movie.name} - starts at ${showtime.startTime.format(formatter)}, ends at ${showtime.endTime.format(formatter)}")
+                println(scheduler.scheduleShowtime(selectedMovie, startTime))
+            }
+            "2" -> {
+                if (theaterOne.showtimeList.isEmpty()) {
+                    println("No showtimes scheduled.")
+                    continue
+                }
+                println("\nSelect a showtime:")
+                theaterOne.showtimeList.forEachIndexed { index, showtime ->
+                    println("${index + 1}. ${showtime.movie.name} at ${showtime.startTime.format(Constants.SHOWTIME_FORMATTER)}")
+                }
+                val choice = readln().toIntOrNull()?.minus(1)
+                if (choice == null || choice !in theaterOne.showtimeList.indices) {
+                    println("Invalid choice.")
+                    continue
+                }
+                val selectedShowtime = theaterOne.showtimeList[choice]
+                
+                println("\nSeating Chart:")
+                selectedShowtime.seatingChart.forEachIndexed { rIndex, row ->
+                    print("${'A' + rIndex} ")
+                    row.forEach { seat -> print(if (seat.isReserved) "X " else ". ") }
+                    println()
+                }
+                print("Enter seat (e.g., A1): ")
+                val seatInput = readln().trim().uppercase()
+                if (seatInput.length >= 2) {
+                    val r = seatInput[0] - 'A'
+                    val c = seatInput.substring(1).toIntOrNull()?.minus(1)
+                    if (c != null && r in selectedShowtime.seatingChart.indices && c in selectedShowtime.seatingChart[0].indices) {
+                        println(bookingService.sellTicket(selectedShowtime, r, c))
+                    } else println("Invalid seat.")
+                } else println("Invalid seat.")
+            }
+            "3" -> break
+            else -> println("Invalid option.")
         }
     }
 }

@@ -2,19 +2,27 @@ package edu.teamcandy.services
 
 import edu.teamcandy.models.Theater
 import edu.teamcandy.models.Showtime
-import java.time.format.DateTimeFormatter
+import edu.teamcandy.models.Movie
+import edu.teamcandy.models.Seat
+import edu.teamcandy.utils.Constants
+import java.time.LocalDateTime
 
 class Scheduler (private val theater: Theater) {
 
     // Schedules a showtime.
     // Returns error/success string message
-    fun scheduleShowtime(showtime: Showtime) : String {
-        // Time formatter for listing showtimes
-        val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm a")
+    fun scheduleShowtime(movie: Movie, startTime: LocalDateTime) : String {
+        // Generate seating chart for the new showtime
+        val seatingChart = List(theater.rows) { row ->
+            List(theater.seatsPerRow) { seatNum ->
+                Seat(row, seatNum)
+            }
+        }
+        val showtime = Showtime(movie, startTime, theater.number, seatingChart)
 
         // set a default error message
-        val successMessage = "${showtime.movie.name} scheduled successfully: from ${showtime.startTime.format(formatter)} to ${
-            showtime.endTime.format(formatter)}!"
+        val successMessage = "${showtime.movie.name} scheduled successfully: from ${showtime.startTime.format(Constants.SHOWTIME_FORMATTER)} to ${
+            showtime.endTime.format(Constants.SHOWTIME_FORMATTER)}!"
 
         // check for overlap
         val overlapExists = checkShowtimeOverlap(showtime)
@@ -46,10 +54,6 @@ class Scheduler (private val theater: Theater) {
     }
 
     private fun saveShowtime(showtimeToSave: Showtime) : Boolean {
-        theater.showtimeList.add(showtimeToSave)
-
-        // TODO: add checks showtime was saved successfully, return false if it wasn't
-
-        return true
+        return theater.showtimeList.add(showtimeToSave)
     }
 }
