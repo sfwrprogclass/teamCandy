@@ -29,5 +29,6 @@ fun startApiAndDatabase() {
             movieRoutes(MovieDatabase)
             swaggerUI(path = "swagger", swaggerFile = "openapi.json")
         }
+        println("Web API is running at http://localhost:8080")
     }.start(wait = true)
 }
