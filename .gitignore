@@ -43,3 +43,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+###  Swagger ###
+docs/.swagger-codegen/
+docs/.swagger-codegen/VERSION

@@ -1,11 +1,23 @@
 package edu.teamcandy.services.movies
 
 import edu.teamcandy.models.Movie
-import java.io.File
+import edu.teamcandy.routes.movieRoutes
+import edu.teamcandy.services.exposed.MovieDatabase
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.openapi.OpenApiInfo
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.install
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.openapi.openAPI
+import io.ktor.server.plugins.swagger.swaggerUI
+import io.ktor.server.routing.routing
 import kotlin.math.round
 
 class MovieServices {
-
     fun showOptions() {
         var input: Int?
         do {
@@ -30,9 +42,6 @@ class MovieServices {
     }
 
     fun addMovie() {
-        val file = File("movies.csv")
-        val movies = getMoviesFromFile(file).toMutableList()
-
         println("Add New Movie")
 
         print("Enter a movie title: ")
@@ -56,130 +65,88 @@ class MovieServices {
             }
         } while (true)
 
-        val movie = Movie(movieName, movieDuration, movieRating.toString(), movieDescription)
-        movies.add(movie)
+        val movie = Movie(name = movieName, durationMinutes = movieDuration, rating = movieRating.toString(), description = movieDescription)
+        MovieDatabase.addMovie(movie)
 
-        saveMoviesToFile(file, movies)
         println("Movie has been added!!")
     }
 
     fun updateMovie() {
-        val file = File("movies.csv")
-        val movies = getMoviesFromFile(file).toMutableList()
+        val movies = MovieDatabase.getAllMovies()
         if (movies.isEmpty()) {
-            println("No movies found.")
+            println("No movies found in database.")
             return
         }
 
-        // Show numbered list
-        println("Movie List")
+        println("\nSelect a movie to edit:")
         movies.forEachIndexed { index, movie ->
-            println("${index + 1}. ${movie.name} (${movie.durationMinutes} min, Rating: ${movie.rating})")
+            println("${index + 1}. ${movie.name} (ID: ${movie.id})")
         }
 
-        var choice: Int
-        do {
-            print("Enter the number of the movie to edit: ")
-            choice = readlnOrNull()?.toIntOrNull() ?: -1
-        } while (choice !in 1..movies.size)
+        print("Enter the number: ")
+        val choice = readlnOrNull()?.toIntOrNull() ?: -1
 
-        val movie = movies[choice - 1]
-        println("Editing '${movie.name}'")
+        if (choice in 1..movies.size) {
+            val selectedMovie = movies[choice - 1]
+            println("Editing '${selectedMovie.name}'")
 
-        print("New name (leave blank to keep current): ")
-        val newName = readln()
-        if (newName.isNotBlank()) movie.name = newName
+            print("New name (blank to keep '${selectedMovie.name}'): ")
+            val newName = readln()
+            if (newName.isNotBlank()) selectedMovie.name = newName
 
-        print("New description (leave blank to keep current): ")
-        val newDesc = readln()
-        if (newDesc.isNotBlank()) movie.description = newDesc
+            print("New description (blank to keep current): ")
+            val newDesc = readln()
+            if (newDesc.isNotBlank()) selectedMovie.description = newDesc
 
-        print("New duration in minutes (leave blank to keep current): ")
-        val newDurationInput = readln()
-        if (newDurationInput.isNotBlank()) {
-            movie.durationMinutes = newDurationInput.toIntOrNull() ?: movie.durationMinutes
+            print("New duration (blank to keep ${selectedMovie.durationMinutes}): ")
+            val newDur = readln()
+            if (newDur.isNotBlank()) selectedMovie.durationMinutes = newDur.toIntOrNull() ?: selectedMovie.durationMinutes
+
+            // UPDATE IN DATABASE
+            val success = MovieDatabase.updateMovie(selectedMovie.id, selectedMovie)
+            if (success) println("Movie updated successfully!") else println("Update failed.")
+        } else {
+            println("Invalid choice.")
         }
-
-        var newRatingInput: String
-        do {
-            print("New rating (1-10) (leave blank to keep current): ")
-            newRatingInput = readln()
-            if (newRatingInput.isBlank()) break
-
-            val rating = newRatingInput.toDoubleOrNull()
-            if (rating != null && rating in 1.0..10.0) {
-                movie.rating = round((rating * 10) / 10).toString()
-                break
-            } else {
-                println("Invalid rating. Must be between 1 and 10.")
-            }
-        } while (true)
-
-        saveMoviesToFile(file, movies)
-        println("Movie updated successfully!")
     }
 
     fun viewMovies() {
-        val movies = getMoviesFromFile(File("movies.csv"))
+        // FETCH FROM DATABASE
+        val movies = MovieDatabase.getAllMovies()
         if (movies.isEmpty()) {
             println("No movies found.")
             return
         }
 
         println("Movie List")
-        movies.forEachIndexed { index, movie ->
-            println("${index + 1}. ${movie.name} (${movie.durationMinutes} min, Rating: ${movie.rating})")
-            println(movie.description)
+        movies.forEach { movie ->
+            println("ID: ${movie.id} | ${movie.name} | Rating: ${movie.rating} | ${movie.durationMinutes} mins")
+            println("Description: ${movie.description}\n")
         }
     }
 
     fun deleteMovie() {
-        val file = File("movies.csv")
-        val movies = getMoviesFromFile(file).toMutableList()
+        val movies = MovieDatabase.getAllMovies()
         if (movies.isEmpty()) {
-            println("No movies found.")
+            println("No movies to delete.")
             return
         }
 
-        // Show numbered list
-        println("Movie List")
         movies.forEachIndexed { index, movie ->
-            println("${index + 1}. ${movie.name} (${movie.durationMinutes} min, Rating: ${movie.rating})")
+            println("${index + 1}. ${movie.name}")
         }
 
-        var choice: Int
-        do {
-            print("Enter the number of the movie to delete: ")
-            choice = readlnOrNull()?.toIntOrNull() ?: -1
-            if (choice !in 1..movies.size - 1) {
-                println("Invalid choice")
-            }
-        } while (choice !in 1..movies.size)
+        print("Enter the number of the movie to delete: ")
+        val choice = readlnOrNull()?.toIntOrNull() ?: -1
 
-        val removedMovie = movies.removeAt(choice - 1)
-        saveMoviesToFile(file, movies)
-        println("Deleted movie: ${removedMovie.name}")
-    }
+        if (choice in 1..movies.size) {
+            val movieToDelete = movies[choice - 1]
 
-    private fun getMoviesFromFile(file: File): List<Movie> {
-        if (!file.exists()) return emptyList()
-        return file.readLines().mapNotNull { line ->
-            val parts = line.split(",")
-            if (parts.size >= 5) {
-                Movie(
-                    name = parts[1],
-                    durationMinutes = parts[3].toIntOrNull() ?: 0,
-                    rating = parts[4],
-                    description = parts[2]
-                )
-            } else null
-        }
-    }
-
-    private fun saveMoviesToFile(file: File, movies: List<Movie>) {
-        file.writeText("")
-        movies.forEachIndexed { index, movie ->
-            file.appendText("${index + 1},${movie.name},${movie.description},${movie.durationMinutes},${movie.rating}\n")
+            // DELETE FROM DATABASE
+            val success = MovieDatabase.deleteMovie(movieToDelete.id)
+            if (success) println("Deleted: ${movieToDelete.name}") else println("Delete failed.")
+        } else {
+            println("Invalid selection.")
         }
     }
 }

@@ -4,10 +4,12 @@ import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Theater
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.services.Scheduler
+import edu.teamcandy.services.exposed.startApiAndDatabase
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 fun main() {
+    startApiAndDatabase()
     println("Welcome to Candy Theaters!")
     println("")
 
@@ -36,10 +38,10 @@ fun main() {
         val startTimeInput = readln()
         val startTime = LocalDateTime.parse(startTimeInput, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
 
-        val scheduleMessage = scheduler.scheduleShowtime(Showtime(Movie(movieName, movieDuration), startTime))
+//        val scheduleMessage = scheduler.scheduleShowtime(Showtime(Movie(movieName, movieDuration), startTime))
 
         // Display success or error message after scheduling showtime
-        println(scheduleMessage)
+//        println(scheduleMessage)
         println("")
 
         print("Would you like to schedule another showtime? (Y or N): ")
@@ -61,4 +63,3 @@ fun main() {
         }
     }
 }
-
