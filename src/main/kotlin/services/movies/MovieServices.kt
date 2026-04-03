@@ -9,7 +9,7 @@ class MovieServices {
         var input: Int?
         do {
             println("What would you like to do?:")
-            println("0. Exit")
+            println("0. Back")
             println("1. View Movies")
             println("2. Add Movie")
             println("3. Edit Movie")
