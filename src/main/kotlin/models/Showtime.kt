@@ -3,6 +3,8 @@ package edu.teamcandy.models
 import java.time.LocalDateTime
 
 data class Showtime(
+    // Identifier
+    val id: Int = 0,
     // Association movie object
     val movie: Movie,
     // When the trailers/previews begin

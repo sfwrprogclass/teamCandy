@@ -1,20 +1,7 @@
 package edu.teamcandy.services.movies
 
 import edu.teamcandy.models.Movie
-import edu.teamcandy.routes.movieRoutes
-import edu.teamcandy.services.exposed.MovieDatabase
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.openapi.OpenApiInfo
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.plugins.openapi.openAPI
-import io.ktor.server.plugins.swagger.swaggerUI
-import io.ktor.server.routing.routing
+import edu.teamcandy.services.exposed.MovieRepository
 import kotlin.math.round
 
 class MovieServices {
@@ -66,13 +53,13 @@ class MovieServices {
         } while (true)
 
         val movie = Movie(name = movieName, durationMinutes = movieDuration, rating = movieRating.toString(), description = movieDescription)
-        MovieDatabase.addMovie(movie)
+        MovieRepository.addMovie(movie)
 
         println("Movie has been added!!")
     }
 
     fun updateMovie() {
-        val movies = MovieDatabase.getAllMovies()
+        val movies = MovieRepository.getAllMovies()
         if (movies.isEmpty()) {
             println("No movies found in database.")
             return
@@ -103,7 +90,7 @@ class MovieServices {
             if (newDur.isNotBlank()) selectedMovie.durationMinutes = newDur.toIntOrNull() ?: selectedMovie.durationMinutes
 
             // UPDATE IN DATABASE
-            val success = MovieDatabase.updateMovie(selectedMovie.id, selectedMovie)
+            val success = MovieRepository.updateMovie(selectedMovie.id, selectedMovie)
             if (success) println("Movie updated successfully!") else println("Update failed.")
         } else {
             println("Invalid choice.")
@@ -112,7 +99,7 @@ class MovieServices {
 
     fun viewMovies() {
         // FETCH FROM DATABASE
-        val movies = MovieDatabase.getAllMovies()
+        val movies = MovieRepository.getAllMovies()
         if (movies.isEmpty()) {
             println("No movies found.")
             return
@@ -126,7 +113,7 @@ class MovieServices {
     }
 
     fun deleteMovie() {
-        val movies = MovieDatabase.getAllMovies()
+        val movies = MovieRepository.getAllMovies()
         if (movies.isEmpty()) {
             println("No movies to delete.")
             return
@@ -143,7 +130,7 @@ class MovieServices {
             val movieToDelete = movies[choice - 1]
 
             // DELETE FROM DATABASE
-            val success = MovieDatabase.deleteMovie(movieToDelete.id)
+            val success = MovieRepository.deleteMovie(movieToDelete.id)
             if (success) println("Deleted: ${movieToDelete.name}") else println("Delete failed.")
         } else {
             println("Invalid selection.")

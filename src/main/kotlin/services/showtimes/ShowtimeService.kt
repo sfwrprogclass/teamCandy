@@ -1,10 +1,10 @@
-package edu.teamcandy.services
+package edu.teamcandy.services.showtimes
 
-import edu.teamcandy.models.Theater
 import edu.teamcandy.models.Showtime
+import edu.teamcandy.models.Theater
 import java.time.format.DateTimeFormatter
 
-class Scheduler (private val theater: Theater) {
+class ShowtimeService (private val theater: Theater) {
 
     // Schedules a showtime.
     // Returns error/success string message
