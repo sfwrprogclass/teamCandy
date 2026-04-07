@@ -2,6 +2,7 @@ package edu.teamcandy.services.exposed
 
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.exposed.ShowtimeTable
+import edu.teamcandy.routes.defaultRoutes
 import edu.teamcandy.routes.movieRoutes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -13,6 +14,8 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.routing.routing
+import io.ktor.server.thymeleaf.Thymeleaf
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -39,7 +42,15 @@ fun startApiAndDatabase() {
             allowMethod(HttpMethod.Put)
             allowMethod(HttpMethod.Delete)
         }
+        install(Thymeleaf) {
+            setTemplateResolver(ClassLoaderTemplateResolver().apply {
+                prefix = "templates/"
+                suffix = ".html"
+                characterEncoding = "UTF-8"
+            })
+        }
         routing {
+            defaultRoutes(ShowtimeRepository, MovieRepository)
             movieRoutes(MovieRepository)
             swaggerUI(path = "swagger", swaggerFile = "openapi.json")
         }

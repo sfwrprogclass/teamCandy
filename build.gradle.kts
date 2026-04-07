@@ -32,6 +32,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:${ktorVersion}")
     implementation("io.ktor:ktor-server-cors-jvm:${ktorVersion}")
 
+    // Thymeleaf
+    implementation("io.ktor:ktor-server-thymeleaf:${ktorVersion}")
+
     //Swagger
     implementation("io.ktor:ktor-server-swagger:${ktorVersion}")
     implementation("io.ktor:ktor-server-openapi:${ktorVersion}")
