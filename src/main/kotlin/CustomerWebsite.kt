@@ -122,7 +122,25 @@ fun main() {
     scheduler1.scheduleShowtime(movies[0], LocalDateTime.now().plusHours(2))
     scheduler1.scheduleShowtime(movies[1], LocalDateTime.now().plusHours(5))
     scheduler2.scheduleShowtime(movies[2], LocalDateTime.now().plusHours(3))
+    scheduler2.scheduleShowtime(movies[0], LocalDateTime.now().plusHours(8)) // Extra showtime for same movie
 
     val website = CustomerWebsite(listOf(theater1, theater2))
-    website.displaySchedule()
+
+    while (true) {
+        println("\n--- Candy Theaters: Customer Menu ---")
+        println("1. View Full Schedule")
+        println("2. Search Movies and Book Tickets")
+        println("3. Exit")
+        print("Select an option: ")
+
+        when (readln().trim()) {
+            "1" -> website.displaySchedule()
+            "2" -> website.searchAndBook()
+            "3" -> {
+                println("Thank you for visiting Candy Theaters!")
+                break
+            }
+            else -> println("Invalid option. Please try again.")
+        }
+    }
 }
