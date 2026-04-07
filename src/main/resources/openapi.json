@@ -1,0 +1,82 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Team Candy Movies API",
+    "version": "1.0",
+    "description": "Manual OpenAPI definition for Movie Management"
+  },
+  "paths": {
+    "/api/movies": {
+      "get": {
+        "summary": "Get all movies",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Movie" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a new movie",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/Movie" } }
+          }
+        },
+        "responses": {
+          "201": { "description": "Movie added successfully" }
+        }
+      }
+    },
+    "/api/movies/{id}": {
+      "put": {
+        "summary": "Update a movie",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/Movie" } }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated" },
+          "404": { "description": "Movie not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a movie",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "404": { "description": "Movie not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Movie": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "durationMinutes": { "type": "integer" },
+          "rating": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}
