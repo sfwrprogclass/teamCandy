@@ -9,11 +9,13 @@ data class Movie(
     // Title of the movie
     var name: String,
     // The duration of the movie
-    val durationMinutes: Int,
+    var durationMinutes: Int,
+    // The rating of the movie
+    val rating: String = "",
     // The cast members
     val cast: List<String> = emptyList(),
     // The genres
     val genres: List<String> = emptyList(),
     // Movie description
-    val description: String = ""
+    var description: String = ""
 )
