@@ -3,8 +3,9 @@ package edu.teamcandy
 import edu.teamcandy.models.Theater
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.repositories.MovieRepository
-import edu.teamcandy.services.Scheduler
+//import edu.teamcandy.services.Scheduler
 import edu.teamcandy.services.BookingService
+import edu.teamcandy.services.Scheduler
 import edu.teamcandy.utils.Constants
 import java.time.LocalDateTime
 
