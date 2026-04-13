@@ -3,23 +3,14 @@ package edu.teamcandy.services.exposed
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.models.Movie
 import edu.teamcandy.repository.MovieRepositoryInterface
-import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 
-object MovieDatabase : MovieRepositoryInterface {
-
-    fun init() {
-        Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
-        transaction {
-            SchemaUtils.create(MovieTable)
-        }
-    }
+object MovieRepository : MovieRepositoryInterface {
 
     override fun addMovie(movie: Movie) {
         transaction {
