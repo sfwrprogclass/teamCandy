@@ -1,17 +1,17 @@
 package edu.teamcandy.services.exposed
 
-import edu.teamcandy.exposed.MovieTable
-import edu.teamcandy.exposed.ShowtimeTable
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Showtime
+import edu.teamcandy.exposed.MovieTable
+import edu.teamcandy.exposed.ShowtimeTable
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import java.time.LocalDateTime
 
 object ShowtimeRepository : ShowtimeRepositoryInterface {
 
@@ -21,6 +21,8 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
                 id = it[ShowtimeTable.id],
                 startTime = it[ShowtimeTable.startTime],
                 paddingMinutes = it[ShowtimeTable.paddingMinutes],
+                auditoriumId = it[ShowtimeTable.auditoriumId],
+                seatingChart = List(5) { r -> List(10) { c -> edu.teamcandy.models.Seat(r, c) } },
                 movie = Movie(
                     id = it[MovieTable.id],
                     name = it[MovieTable.name],
@@ -38,6 +40,7 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
                 it[movie] = showtime.movie.id
                 it[startTime] = showtime.startTime
                 it[paddingMinutes] = showtime.paddingMinutes
+                it[auditoriumId] = showtime.auditoriumId
             }
         }
     }
@@ -47,6 +50,7 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
             it[movie] = showtime.movie.id
             it[startTime] = showtime.startTime
             it[paddingMinutes] = showtime.paddingMinutes
+            it[auditoriumId] = showtime.auditoriumId
         }
         rowsUpdated > 0
     }

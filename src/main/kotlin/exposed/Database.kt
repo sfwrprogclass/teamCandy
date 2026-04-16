@@ -14,11 +14,30 @@ object MovieTable : Table("movies") {
     override val primaryKey = PrimaryKey(id)
 }
 
+object TheaterTable : Table("theaters") {
+    val id = integer("id").autoIncrement()
+    val name = varchar("name", 255)
+    val location = varchar("location", 255).default("")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object AuditoriumTable : Table("auditoriums") {
+    val id = integer("id").autoIncrement()
+    val number = integer("number")
+    val theaterId = integer("theater_id").references(TheaterTable.id)
+    val rows = integer("rows").default(5)
+    val seatsPerRow = integer("seats_per_row").default(10)
+
+    override val primaryKey = PrimaryKey(id)
+}
+
 object ShowtimeTable : Table("showtimes") {
     val id = integer("id").autoIncrement()
     val movie = integer("movie_id").references(MovieTable.id)
     val startTime = datetime("start_time").default(LocalDateTime.now())
     val paddingMinutes = integer("padding_minutes").default(15)
+    val auditoriumId = integer("auditorium_id").references(AuditoriumTable.id)
 
     override val primaryKey = PrimaryKey(id)
 }

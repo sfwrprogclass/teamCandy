@@ -9,8 +9,8 @@ data class Showtime(
     val movie: Movie,
     // When the trailers/previews begin
     val startTime: LocalDateTime,
-    // Theater where the show is playing
-    val theaterNumber: Int,
+    // Auditorium ID where the show is playing
+    val auditoriumId: Int,
     // Seating chart for this specific showtime
     val seatingChart: List<List<Seat>>,
     // Time needed for trailers, to determine the actual end time

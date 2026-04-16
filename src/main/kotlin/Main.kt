@@ -1,27 +1,27 @@
 package edu.teamcandy
 
-import edu.teamcandy.models.Theater
+import edu.teamcandy.models.Auditorium
 import edu.teamcandy.repositories.MovieRepository
 import edu.teamcandy.services.BookingService
 import edu.teamcandy.services.Scheduler
-import edu.teamcandy.services.exposed.MovieDatabase
+import edu.teamcandy.services.exposed.init
 import edu.teamcandy.services.exposed.ShowtimeRepository
+import edu.teamcandy.services.exposed.TheaterRepository
 import edu.teamcandy.services.exposed.startApiAndDatabase
 import edu.teamcandy.services.movies.MovieServices
 import edu.teamcandy.services.showtimes.ShowtimeServices
+import edu.teamcandy.services.theaters.TheaterServices
 import edu.teamcandy.utils.Constants
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 fun main() {
     startApiAndDatabase()
-    MovieDatabase.init()
+    init()
     println("Welcome to Candy Theaters Backend!")
-    val theaterOne = Theater(1)
-    val scheduler = Scheduler(theaterOne)
+    
     val movieServices = MovieServices()
-    val showtimeServices = ShowtimeServices(theaterOne, ShowtimeRepository)
-
+    val theaterServices = TheaterServices()
+    
     println("Welcome to Candy Theaters!")
 
     var input: Int?
@@ -29,105 +29,49 @@ fun main() {
         println("\nMain Menu:")
         println("0. Exit")
         println("1. Movies")
-        println("2. Showtimes")
-        println("3. Backend Options")
+        println("2. Theaters & Auditoriums")
+        println("3. Showtimes (Management)")
         print("Enter option (0-3): ")
         input = readlnOrNull()?.toIntOrNull()
 
         when (input) {
             1 -> movieServices.showOptions()
-            2 -> showtimeServices.showOptions()
+            2 -> theaterServices.showOptions()
             3 -> {
-                println("\n--- Backend Menu ---")
-                println("1. Schedule Showtime")
-                println("2. Sell Ticket")
-                println("3. View Schedule")
-                println("4. Exit Backend")
-                print("Select an option: ")
-
-                when (readln().trim()) {
-                    "1" -> {
-                        println("\nSelect a movie:")
-                        val movies = MovieRepository().getAllMovies()
-                        movies.forEachIndexed { index, movie ->
-                            println("${index + 1}. ${movie.name}")
-                        }
-                        print("Choice: ")
-                        val movieChoice = readln().toIntOrNull()?.minus(1)
-                        if (movieChoice != null && movieChoice in movies.indices) {
-                            val selectedMovie = movies[movieChoice]
-                            print("Enter showtime (yyyy-MM-dd HH:mm): ")
-                            val startTimeInput = readln().trim()
-                            try {
-                                val startTime = LocalDateTime.parse(startTimeInput, Constants.INPUT_FORMATTER)
-                                println(scheduler.scheduleShowtime(selectedMovie, startTime))
-                            } catch (e: Exception) {
-                                println("Invalid date format.")
-                            }
+                println("\nSelect a Theater to manage showtimes for:")
+                val theaters = TheaterRepository.getAllTheaters()
+                if (theaters.isEmpty()) {
+                    println("No theaters available. Please create one first.")
+                } else {
+                    theaters.forEachIndexed { index, theater -> println("${index + 1}. ${theater.name}") }
+                    print("Choice: ")
+                    val tChoice = readln().toIntOrNull()?.minus(1)
+                    if (tChoice != null && tChoice in theaters.indices) {
+                        val selectedTheater = theaters[tChoice]
+                        println("\nSelect an Auditorium in ${selectedTheater.name}:")
+                        val auds = selectedTheater.auditoriums
+                        if (auds.isEmpty()) {
+                            println("No auditoriums in this theater.")
                         } else {
-                            println("Invalid movie selection.")
-                        }
-                    }
-                    "2" -> {
-                        if (theaterOne.showtimeList.isEmpty()) {
-                            println("No showtimes available.")
-                        } else {
-                            println("\nSelect a showtime to sell a ticket for:")
-                            theaterOne.showtimeList.sortedBy { it.startTime }.forEachIndexed { index, showtime ->
-                                println("${index + 1}. ${showtime.movie.name} at ${showtime.startTime.format(Constants.SHOWTIME_FORMATTER)}")
-                            }
+                            auds.forEachIndexed { index, aud -> println("${index + 1}. Auditorium ${aud.number}") }
                             print("Choice: ")
-                            val showChoice = readln().toIntOrNull()?.minus(1)
-                            val sortedShowtimes = theaterOne.showtimeList.sortedBy { it.startTime }
-                            if (showChoice != null && showChoice in sortedShowtimes.indices) {
-                                val selectedShowtime = sortedShowtimes[showChoice]
-
-                                println("\nSeating Chart for Theater ${selectedShowtime.theaterNumber}:")
-                                println("  1 2 3 4 5 6 7 8 9 10")
-                                selectedShowtime.seatingChart.forEachIndexed { rIndex, row ->
-                                    print("${'A' + rIndex} ")
-                                    row.forEach { seat ->
-                                        print(if (seat.isReserved) "X " else ". ")
-                                    }
-                                    println()
-                                }
-
-                                print("Enter seat (e.g., A1): ")
-                                val seatInput = readln().trim().uppercase()
-                                if (seatInput.length >= 2) {
-                                    val row = seatInput[0] - 'A'
-                                    val col = seatInput.substring(1).toIntOrNull()?.minus(1)
-                                    if (col != null && row in selectedShowtime.seatingChart.indices && col in selectedShowtime.seatingChart[0].indices) {
-                                        println(BookingService().sellTicket(selectedShowtime, row, col))
-                                    } else {
-                                        println("Invalid seat.")
-                                    }
-                                } else {
-                                    println("Invalid seat format.")
-                                }
-                            } else {
-                                println("Invalid showtime selection.")
+                            val aChoice = readln().toIntOrNull()?.minus(1)
+                            if (aChoice != null && aChoice in auds.indices) {
+                                val selectedAud = auds[aChoice]
+                                // Need to load showtimes for this auditorium
+                                val allShowtimes = ShowtimeRepository.getAllShowtimes().filter { it.auditoriumId == selectedAud.id }
+                                selectedAud.showtimeList.clear()
+                                selectedAud.showtimeList.addAll(allShowtimes)
+                                
+                                val showtimeServices = ShowtimeServices(selectedAud, ShowtimeRepository)
+                                showtimeServices.showOptions()
                             }
                         }
                     }
-                    "3" -> {
-                        if (theaterOne.showtimeList.isEmpty()) {
-                            println("No showtimes scheduled for Theater ${theaterOne.number}")
-                        } else {
-                            println("Showtimes for Theater ${theaterOne.number}:")
-                            for (showtime in theaterOne.showtimeList.sortedBy { it.startTime }) {
-                                println("${showtime.movie.name} - starts at ${showtime.startTime.format(Constants.SHOWTIME_FORMATTER)}, ends at ${showtime.endTime.format(Constants.SHOWTIME_FORMATTER)}")
-                            }
-                        }
-                    }
-                    "4" -> println("Returning to Main Menu...")
-                    else -> println("Invalid option.")
                 }
             }
             0 -> println("Goodbye!")
             else -> println("Please enter 0-3.")
         }
     } while (input != 0)
-        }
-    println("Goodbye!")
 }
