@@ -1,7 +1,7 @@
 package edu.teamcandy.services.showtimes
 
 import edu.teamcandy.models.Showtime
-import edu.teamcandy.models.Theater
+import edu.teamcandy.models.Auditorium
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
 import edu.teamcandy.services.exposed.MovieRepository
 import edu.teamcandy.services.exposed.ShowtimeRepository
@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class ShowtimeServices(
-    private val theater: Theater,
+    private val theater: Auditorium,
     private val repository: ShowtimeRepositoryInterface
 ) {
     private val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm a")
@@ -71,7 +71,12 @@ class ShowtimeServices(
         print("Enter start time (yyyy-MM-dd HH:mm): ")
         val startTime = LocalDateTime.parse(readln(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
 
-        val showtime = Showtime(movie = selectedMovie, startTime = startTime)
+        val showtime = Showtime(
+            movie = selectedMovie,
+            startTime = startTime,
+            auditoriumId = theater.id,
+            seatingChart = List(theater.rows) { r -> List(theater.seatsPerRow) { c -> edu.teamcandy.models.Seat(r, c) } }
+        )
         val result = scheduleShowtime(showtime)
         println(result)
     }
