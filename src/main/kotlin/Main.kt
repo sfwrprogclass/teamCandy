@@ -11,8 +11,10 @@ import edu.teamcandy.services.exposed.startApiAndDatabase
 import edu.teamcandy.services.movies.MovieServices
 import edu.teamcandy.services.showtimes.ShowtimeServices
 import edu.teamcandy.services.theaters.TheaterServices
+import edu.teamcandy.ui.EmployeeTicketSaleGUI
 import edu.teamcandy.utils.Constants
 import java.time.LocalDateTime
+import javax.swing.SwingUtilities
 
 fun main() {
     startApiAndDatabase()
@@ -31,7 +33,8 @@ fun main() {
         println("1. Movies")
         println("2. Theaters & Auditoriums")
         println("3. Showtimes (Management)")
-        print("Enter option (0-3): ")
+        println("4. Sell Tickets (GUI)")
+        print("Enter option (0-4): ")
         input = readlnOrNull()?.toIntOrNull()
 
         when (input) {
@@ -70,8 +73,14 @@ fun main() {
                     }
                 }
             }
+            4 -> {
+                SwingUtilities.invokeLater {
+                    val gui = EmployeeTicketSaleGUI()
+                    gui.isVisible = true
+                }
+            }
             0 -> println("Goodbye!")
-            else -> println("Please enter 0-3.")
+            else -> println("Please enter 0-4.")
         }
     } while (input != 0)
 }

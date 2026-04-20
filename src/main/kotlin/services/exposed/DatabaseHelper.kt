@@ -47,6 +47,33 @@ fun init() {
                 }
             }
         }
+
+        // Seed movies if none exist
+        if (MovieTable.selectAll().empty()) {
+            val movieRepo = edu.teamcandy.repositories.MovieRepository()
+            val allMovies = movieRepo.getAllMovies()
+            val theaterId = TheaterTable.selectAll().firstOrNull()?.get(TheaterTable.id)
+            val auditoriumId = AuditoriumTable.selectAll().firstOrNull()?.get(AuditoriumTable.id)
+
+            allMovies.forEach { movie ->
+                val movieId = MovieTable.insert {
+                    it[name] = movie.name
+                    it[durationMinutes] = movie.durationMinutes
+                    it[rating] = movie.rating
+                    it[description] = movie.description
+                } get MovieTable.id
+
+                // Optionally seed some showtimes for the first few movies
+                if (movie.id <= 3 && auditoriumId != null) {
+                    ShowtimeTable.insert {
+                        it[ShowtimeTable.movie] = movieId
+                        it[startTime] = java.time.LocalDateTime.now().plusHours(movie.id.toLong() * 2)
+                        it[paddingMinutes] = 15
+                        it[ShowtimeTable.auditoriumId] = auditoriumId
+                    }
+                }
+            }
+        }
     }
 }
 fun startApiAndDatabase() {
