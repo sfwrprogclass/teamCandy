@@ -75,7 +75,7 @@ fun startApiAndDatabase() {
         routing {
             defaultRoutes(ShowtimeRepository, MovieRepository)
             movieRoutes(MovieRepository)
-            swaggerUI(path = "swagger", swaggerFile = "openapi.json")
+swaggerUI(path = "swagger", swaggerFile = "openapi.json")
         }
         println("Web API is running at http://localhost:8080")
     }.start(wait = false)
