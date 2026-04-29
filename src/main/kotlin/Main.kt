@@ -1,12 +1,6 @@
 package edu.teamcandy
 
-import edu.teamcandy.models.Auditorium
-import edu.teamcandy.repositories.MovieRepository
-import edu.teamcandy.services.BookingService
-import edu.teamcandy.services.Scheduler
 import edu.teamcandy.services.exposed.init
-import edu.teamcandy.services.exposed.ShowtimeRepository
-import edu.teamcandy.services.exposed.TheaterRepository
 import edu.teamcandy.services.exposed.startApiAndDatabase
 import edu.teamcandy.services.movies.MovieServices
 import edu.teamcandy.services.showtimes.ShowtimeServices
@@ -65,7 +59,7 @@ fun main() {
                                 val allShowtimes = ShowtimeRepository.getAllShowtimes().filter { it.auditoriumId == selectedAud.id }
                                 selectedAud.showtimeList.clear()
                                 selectedAud.showtimeList.addAll(allShowtimes)
-                                
+
                                 val showtimeServices = ShowtimeServices(selectedAud, ShowtimeRepository)
                                 showtimeServices.showOptions()
                             }
