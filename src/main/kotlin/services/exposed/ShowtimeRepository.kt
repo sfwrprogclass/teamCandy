@@ -2,27 +2,38 @@ package edu.teamcandy.services.exposed
 
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Showtime
-import edu.teamcandy.exposed.MovieTable
-import edu.teamcandy.exposed.ShowtimeTable
+import edu.teamcandy.exposed.*
+import edu.teamcandy.models.Seat
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 object ShowtimeRepository : ShowtimeRepositoryInterface {
 
     override fun getAllShowtimes(): List<Showtime> = transaction {
-        (ShowtimeTable innerJoin MovieTable).selectAll().map {
+        val tickets = TicketTable.selectAll().toList()
+
+        (ShowtimeTable innerJoin MovieTable innerJoin AuditoriumTable).selectAll().map {
+            val showId = it[ShowtimeTable.id]
+            val rows = it[AuditoriumTable.rows]
+            val seatsPerRow = it[AuditoriumTable.seatsPerRow]
+
+            val showtimeTickets = tickets.filter { t -> t[TicketTable.showtimeId] == showId }
+
+            val seatingChart = List(rows) { r ->
+                List(seatsPerRow) { c ->
+                    Seat(r, c, isReserved = showtimeTickets.any { t -> t[TicketTable.row] == r && t[TicketTable.seatNumber] == c })
+                }
+            }
+
             Showtime(
-                id = it[ShowtimeTable.id],
+                id = showId,
                 startTime = it[ShowtimeTable.startTime],
                 paddingMinutes = it[ShowtimeTable.paddingMinutes],
                 auditoriumId = it[ShowtimeTable.auditoriumId],
-                seatingChart = List(5) { r -> List(10) { c -> edu.teamcandy.models.Seat(r, c) } },
+                seatingChart = seatingChart,
                 movie = Movie(
                     id = it[MovieTable.id],
                     name = it[MovieTable.name],
@@ -32,6 +43,22 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
                 )
             )
         }.toList()
+    }
+
+    override fun reserveSeat(showtimeId: Int, row: Int, seatNumber: Int): Boolean = transaction {
+        val alreadyReserved = TicketTable.select {
+            (TicketTable.showtimeId eq showtimeId) and (TicketTable.row eq row) and (TicketTable.seatNumber eq seatNumber)
+        }.any()
+
+        if (alreadyReserved) return@transaction false
+
+        TicketTable.insert {
+            it[TicketTable.showtimeId] = showtimeId
+            it[TicketTable.row] = row
+            it[TicketTable.seatNumber] = seatNumber
+            it[TicketTable.soldAt] = LocalDateTime.now()
+        }
+        true
     }
 
     override fun addShowtime(showtime: Showtime) {

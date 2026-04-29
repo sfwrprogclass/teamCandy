@@ -104,11 +104,13 @@ class EmployeeTicketSaleGUI : JFrame("Candy Theaters - Employee Ticket Sale") {
     }
 
     private fun loadShowtimes() {
+        val selectedId = selectedShowtime?.id
+        
         showtimeListModel.clear()
         seatingPanel.removeAll()
         seatingPanel.revalidate()
         seatingPanel.repaint()
-        selectedShowtime = null
+        // Don't null out selectedShowtime immediately if we want to try to restore it
         
         val theaterName = theaterComboBox.selectedItem as? String ?: return
         val audName = auditoriumComboBox.selectedItem as? String ?: return
@@ -121,12 +123,24 @@ class EmployeeTicketSaleGUI : JFrame("Candy Theaters - Employee Ticket Sale") {
         currentShowtimes = ShowtimeRepository.getAllShowtimes().filter { it.auditoriumId == auditorium.id }
         
         if (currentShowtimes.isEmpty()) {
+            selectedShowtime = null
             statusLabel.text = "No showtimes found for this auditorium."
         } else {
-            currentShowtimes.forEach {
+            var selectedIndex = -1
+            currentShowtimes.forEachIndexed { index, it ->
                 showtimeListModel.addElement("${it.movie.name} - ${it.startTime}")
+                if (it.id == selectedId) {
+                    selectedIndex = index
+                }
             }
-            statusLabel.text = "Select a showtime to view seating."
+            
+            if (selectedIndex != -1) {
+                showtimeList.selectedIndex = selectedIndex
+                displaySeatingChart(currentShowtimes[selectedIndex])
+            } else {
+                selectedShowtime = null
+                statusLabel.text = "Select a showtime to view seating."
+            }
         }
     }
 

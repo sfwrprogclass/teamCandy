@@ -1,9 +1,6 @@
 package edu.teamcandy.services.exposed
 
-import edu.teamcandy.exposed.AuditoriumTable
-import edu.teamcandy.exposed.MovieTable
-import edu.teamcandy.exposed.ShowtimeTable
-import edu.teamcandy.exposed.TheaterTable
+import edu.teamcandy.exposed.*
 import edu.teamcandy.models.Auditorium
 import edu.teamcandy.models.Theater
 import edu.teamcandy.routes.defaultRoutes
@@ -20,16 +17,14 @@ import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.routing.routing
 import io.ktor.server.thymeleaf.Thymeleaf
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNotNull
 import org.jetbrains.exposed.sql.transactions.transaction
 
 fun init() {
     Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable)
+        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, TicketTable)
 
         // Seed initial data if no theaters exist
         if (TheaterTable.selectAll().empty()) {
@@ -48,11 +43,17 @@ fun init() {
             }
         }
 
-        // Seed movies if none exist
-        if (MovieTable.selectAll().empty()) {
+        // Seed movies if none exist or if they are "empty"
+        val existingMovies = MovieTable.selectAll().toList()
+        if (existingMovies.isEmpty() || existingMovies.any { it[MovieTable.name].isBlank() }) {
+            // Clear existing if any "empty" ones exist to start fresh
+            if (existingMovies.isNotEmpty()) {
+                ShowtimeTable.deleteWhere { ShowtimeTable.id.isNotNull() }
+                MovieTable.deleteWhere { MovieTable.id.isNotNull() }
+            }
+
             val movieRepo = edu.teamcandy.repositories.MovieRepository()
             val allMovies = movieRepo.getAllMovies()
-            val theaterId = TheaterTable.selectAll().firstOrNull()?.get(TheaterTable.id)
             val auditoriumId = AuditoriumTable.selectAll().firstOrNull()?.get(AuditoriumTable.id)
 
             allMovies.forEach { movie ->
@@ -79,7 +80,7 @@ fun init() {
 fun startApiAndDatabase() {
     Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable)
+        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, TicketTable)
     }
 
     embeddedServer(Netty, port = 8080) {

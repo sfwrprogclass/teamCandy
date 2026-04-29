@@ -4,6 +4,7 @@ import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Seat
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.services.BookingService
+import edu.teamcandy.services.exposed.ShowtimeRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
@@ -15,9 +16,15 @@ class ConcurrentPurchaseTest {
 
     @Test
     fun testConcurrentPurchases() {
-        val movie = Movie(1, "Test Movie", 120, "PG", "Test Description")
-        val seatingChart = List(5) { r -> List(10) { c -> Seat(r, c) } }
-        val showtime = Showtime(1, movie, LocalDateTime.now(), 1, seatingChart)
+        edu.teamcandy.services.exposed.init() // Initialize DB for repository
+        val showtimes = ShowtimeRepository.getAllShowtimes()
+        val showtime = if (showtimes.isNotEmpty()) {
+            showtimes.first()
+        } else {
+            val movie = Movie(1, "Test Movie", 120, "PG", listOf("Actor"), listOf("Genre"), "Test Description")
+            val seatingChart = List(5) { r -> List(10) { c -> Seat(r, c) } }
+            Showtime(1, movie, LocalDateTime.now(), 1, seatingChart)
+        }
         val bookingService = BookingService()
 
         val numThreads = 10

@@ -7,4 +7,5 @@ interface ShowtimeRepositoryInterface {
     fun deleteShowtime(id: Int): Boolean
     fun addShowtime(showtime: Showtime)
     fun updateShowtime(id: Int, showtime: Showtime): Boolean
+    fun reserveSeat(showtimeId: Int, row: Int, seatNumber: Int): Boolean
 }
