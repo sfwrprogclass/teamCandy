@@ -46,19 +46,18 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
     }
 
     override fun reserveSeat(showtimeId: Int, row: Int, seatNumber: Int): Boolean = transaction {
-        val alreadyReserved = TicketTable.select {
-            (TicketTable.showtimeId eq showtimeId) and (TicketTable.row eq row) and (TicketTable.seatNumber eq seatNumber)
-        }.any()
-
-        if (alreadyReserved) return@transaction false
-
-        TicketTable.insert {
-            it[TicketTable.showtimeId] = showtimeId
-            it[TicketTable.row] = row
-            it[TicketTable.seatNumber] = seatNumber
-            it[TicketTable.soldAt] = LocalDateTime.now()
+        try {
+            TicketTable.insert {
+                it[TicketTable.showtimeId] = showtimeId
+                it[TicketTable.row] = row
+                it[TicketTable.seatNumber] = seatNumber
+                it[TicketTable.soldAt] = LocalDateTime.now()
+            }
+            true
+        } catch (e: Exception) {
+            // Unique constraint violation or other error
+            false
         }
-        true
     }
 
     override fun addShowtime(showtime: Showtime) {

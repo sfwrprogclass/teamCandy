@@ -1,5 +1,7 @@
 package edu.teamcandy
 
+import edu.teamcandy.services.exposed.ShowtimeRepository
+import edu.teamcandy.services.exposed.TheaterRepository
 import edu.teamcandy.services.exposed.init
 import edu.teamcandy.services.exposed.startApiAndDatabase
 import edu.teamcandy.services.movies.MovieServices

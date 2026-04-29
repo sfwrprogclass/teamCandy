@@ -1,10 +1,12 @@
 package edu.teamcandy
 
-import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Seat
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.services.BookingService
 import edu.teamcandy.services.exposed.ShowtimeRepository
+import edu.teamcandy.exposed.*
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
@@ -16,15 +18,47 @@ class ConcurrentPurchaseTest {
 
     @Test
     fun testConcurrentPurchases() {
-        edu.teamcandy.services.exposed.init() // Initialize DB for repository
-        val showtimes = ShowtimeRepository.getAllShowtimes()
-        val showtime = if (showtimes.isNotEmpty()) {
-            showtimes.first()
-        } else {
-            val movie = Movie(1, "Test Movie", 120, "PG", listOf("Actor"), listOf("Genre"), "Test Description")
-            val seatingChart = List(5) { r -> List(10) { c -> Seat(r, c) } }
-            Showtime(1, movie, LocalDateTime.now(), 1, seatingChart)
+        // Use a unique file for this test to avoid conflicts and ensure schema is updated
+        val testDbFile = "test_concurrent_${System.currentTimeMillis()}.db"
+        Database.connect("jdbc:sqlite:$testDbFile", "org.sqlite.JDBC")
+        transaction {
+            SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, TicketTable)
         }
+        
+        try {
+            // Ensure we have at least one movie and showtime in the REAL database
+            val showtime = transaction {
+                println("[DEBUG_LOG] Creating test data")
+                val theaterId = TheaterTable.insert {
+                    it[name] = "Test Theater"
+                    it[location] = "Test Location"
+                } get TheaterTable.id
+
+                val audId = AuditoriumTable.insert {
+                    it[number] = 1
+                    it[this.theaterId] = theaterId
+                    it[rows] = 5
+                    it[seatsPerRow] = 10
+                } get AuditoriumTable.id
+
+                val movieId = MovieTable.insert {
+                    it[name] = "Test Movie"
+                    it[durationMinutes] = 120
+                    it[rating] = "PG"
+                    it[description] = "Test Description"
+                } get MovieTable.id
+
+                val showtimeId = ShowtimeTable.insert {
+                    it[movie] = movieId
+                    it[startTime] = LocalDateTime.now().plusDays(1)
+                    it[paddingMinutes] = 15
+                    it[auditoriumId] = audId
+                } get ShowtimeTable.id
+                
+                ShowtimeRepository.getAllShowtimes().first { it.id == showtimeId }
+            }
+
+        println("[DEBUG_LOG] Selected Showtime ID: ${showtime.id}")
         val bookingService = BookingService()
 
         val numThreads = 10
@@ -60,5 +94,8 @@ class ConcurrentPurchaseTest {
         // Only ONE should succeed
         assertEquals(1, successCount.get(), "Only one thread should have successfully booked the seat")
         assertEquals(numThreads - 1, failureCount.get(), "All other threads should have failed")
+    } finally {
+        java.io.File(testDbFile).delete()
     }
+}
 }

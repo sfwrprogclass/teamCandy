@@ -50,4 +50,7 @@ object TicketTable : Table("tickets") {
     val soldAt = datetime("sold_at").default(LocalDateTime.now())
 
     override val primaryKey = PrimaryKey(id)
+    init {
+        uniqueIndex(showtimeId, row, seatNumber)
+    }
 }
