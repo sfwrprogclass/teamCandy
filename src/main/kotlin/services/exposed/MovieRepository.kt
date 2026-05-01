@@ -2,7 +2,7 @@ package edu.teamcandy.services.exposed
 
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.models.Movie
-import edu.teamcandy.repository.MovieRepositoryInterface
+import edu.teamcandy.interfaces.MovieRepositoryInterface
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

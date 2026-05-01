@@ -1,7 +1,7 @@
 package edu.teamcandy.routes
 
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
-import edu.teamcandy.repository.MovieRepositoryInterface
+import edu.teamcandy.interfaces.MovieRepositoryInterface
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get

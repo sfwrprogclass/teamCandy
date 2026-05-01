@@ -2,17 +2,21 @@ package edu.teamcandy.services.exposed
 
 import edu.teamcandy.exposed.AuditoriumTable
 import edu.teamcandy.exposed.MovieTable
+import edu.teamcandy.exposed.PaymentMethodTable
+import edu.teamcandy.exposed.SeatTable
 import edu.teamcandy.exposed.ShowtimeTable
 import edu.teamcandy.exposed.TheaterTable
 import edu.teamcandy.models.Auditorium
 import edu.teamcandy.models.Theater
 import edu.teamcandy.routes.defaultRoutes
 import edu.teamcandy.routes.movieRoutes
+import edu.teamcandy.routes.showtimeRoutes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
@@ -52,7 +56,7 @@ fun init() {
 fun startApiAndDatabase() {
     Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable)
+        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, SeatTable, PaymentMethodTable)
     }
 
     embeddedServer(Netty, port = 8080) {
@@ -75,7 +79,10 @@ fun startApiAndDatabase() {
         routing {
             defaultRoutes(ShowtimeRepository, MovieRepository)
             movieRoutes(MovieRepository)
+            showtimeRoutes(ShowtimeRepository)
             swaggerUI(path = "swagger", swaggerFile = "openapi.json")
+            staticResources("/css", "static/css")
+            staticResources("/js", "static/js")
         }
         println("Web API is running at http://localhost:8080")
     }.start(wait = false)

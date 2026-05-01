@@ -1,7 +1,8 @@
 package edu.teamcandy.routes
 
+import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.models.Movie
-import edu.teamcandy.repository.MovieRepositoryInterface
+import edu.teamcandy.interfaces.MovieRepositoryInterface
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -11,6 +12,9 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
+import io.ktor.server.thymeleaf.ThymeleafContent
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 
 fun Route.movieRoutes(repository: MovieRepositoryInterface) {
     route("/api/movies") {
@@ -54,5 +58,42 @@ fun Route.movieRoutes(repository: MovieRepositoryInterface) {
                 call.respond(HttpStatusCode.NotFound, "Movie not found")
             }
         }
+    }
+
+    get("/movies/{id}") {
+        val movieId = call.parameters["id"]?.toIntOrNull()
+
+        if (movieId == null) {
+            call.respond(HttpStatusCode.BadRequest, "Invalid movie id")
+            return@get
+        }
+
+        val movie = transaction {
+            MovieTable
+                .selectAll()
+                .where { MovieTable.id eq movieId }
+                .singleOrNull()
+                ?.let {
+                    Movie(
+                        id = it[MovieTable.id],
+                        name = it[MovieTable.name],
+                        durationMinutes = it[MovieTable.durationMinutes],
+                        rating = it[MovieTable.rating],
+                        description = it[MovieTable.description]
+                    )
+                }
+        }
+
+        if (movie == null) {
+            call.respond(HttpStatusCode.NotFound, "Movie not found")
+            return@get
+        }
+
+        call.respond(
+            ThymeleafContent(
+                "customer/MovieDetails",
+                mapOf("movie" to movie)
+            )
+        )
     }
 }
