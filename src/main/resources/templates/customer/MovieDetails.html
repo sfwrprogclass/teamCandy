@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${movie.name}">Movie Details</title>
+  <link rel="stylesheet" href="/css/MovieDetails.css" />
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back-link">← Back to Movies</a>
+
+  <div class="movie-card">
+    <div class="movie-title" th:text="${movie.name}">Movie Name</div>
+
+    <div class="movie-info">
+      <strong>Duration:</strong>
+      <span th:text="${movie.durationMinutes}">120</span> min
+    </div>
+
+    <div class="movie-info">
+      <strong>Rating:</strong>
+      <span th:text="${movie.rating}">8.2</span>/10
+    </div>
+
+    <div class="movie-description">
+      <strong>Description:</strong>
+      <span th:text="${movie.description}">Movie description here.</span>
+    </div>
+  </div>
+
+  <div class="schedule-card">
+    <div class="section-title">Showtimes</div>
+
+    <div id="dateList" class="date-list"></div>
+
+    <div id="selectedDateTitle" class="movie-info"></div>
+
+    <div id="showtimeList" class="showtime-grid"></div>
+
+    <p id="showtimeStatus" class="status">Loading showtimes...</p>
+  </div>
+
+  <div id="seatingSection" class="seating-card hidden">
+    <div class="section-title">Seating Chart</div>
+    <div id="seatingHeader" class="seating-header"></div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-box available"></div>
+        <span>Available</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box selected"></div>
+        <span>Selected</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box reserved"></div>
+        <span>Reserved</span>
+      </div>
+    </div>
+
+    <div id="seatingChart" class="seating-chart"></div>
+
+    <div class="reserve-actions">
+      <button id="reserveButton" class="reserve-button" type="button">Select Seats</button>
+      <p id="reserveMessage" class="status"></p>
+    </div>
+  </div>
+
+  <div id="selectionSummarySection" class="selection-layout hidden">
+    <div class="seating-card selection-card">
+      <div class="section-title">Selection Details</div>
+
+      <div class="movie-info">
+        <strong>Movie:</strong>
+        <span id="summaryMovieName" th:text="${movie.name}">Movie Name</span>
+      </div>
+
+      <div class="movie-info">
+        <strong>Showtime:</strong>
+        <span id="summaryShowtime">-</span>
+      </div>
+
+      <div class="movie-info">
+        <strong>Auditorium:</strong>
+        <span id="summaryAuditorium">-</span>
+      </div>
+
+      <div class="movie-info">
+        <strong>Selected Seats:</strong>
+        <span id="summarySeats">-</span>
+      </div>
+
+      <div class="movie-info">
+        <strong>Total Price:</strong>
+        <span id="summaryPrice"></span>
+      </div>
+    </div>
+
+    <div class="seating-card payment-card">
+      <div class="section-title">Payment</div>
+
+      <form autocomplete="off">
+        <div class="payment-field">
+          <label for="cardName">Name on Card</label>
+          <input type="text" id="cardName" class="payment-input" placeholder="John Doe" autocomplete="off">
+        </div>
+
+        <div class="payment-field">
+          <label for="cardNumber">Card Number</label>
+          <input type="text" id="cardNumber" class="payment-input" placeholder="1234 5678 9012 3456" autocomplete="off">
+        </div>
+
+        <div class="payment-row">
+          <div class="payment-field half-field">
+            <label for="cardExpiry">Expiry</label>
+            <input type="text" id="cardExpiry" class="payment-input" placeholder="MM/YY" autocomplete="off">
+          </div>
+
+          <div class="payment-field half-field">
+            <label for="cardCvv">CVV</label>
+            <input type="text" id="cardCvv" class="payment-input" placeholder="123" autocomplete="off">
+          </div>
+        </div>
+
+        <button id="payButton" class="pay-button" type="button">Pay</button>
+        <p id="paymentMessage" class="status"></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="paymentDialog" class="dialog hidden">
+  <div class="dialog-box">
+    <div id="dialogTitle" class="dialog-title">Processing Payment</div>
+    <div id="dialogMessage" class="dialog-message">Please wait...</div>
+
+    <div id="dialogSpinner" class="dialog-spinner"></div>
+
+    <div id="dialogActions" class="dialog-actions hidden">
+      <button id="backToPaymentButton" class="dialog-button hidden" type="button">
+        Back to Payment
+      </button>
+
+      <button id="returnHomeButton" class="dialog-button hidden" type="button">
+        Return Home
+      </button>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  const movieId = [[${movie.id}]];
+  const movieName = [[${movie.name}]];
+</script>
+<script src="/js/MovieDetails.js"></script>
+</body>
+</html>

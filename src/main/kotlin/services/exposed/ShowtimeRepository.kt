@@ -29,7 +29,8 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
                     durationMinutes = it[MovieTable.durationMinutes],
                     rating = it[MovieTable.rating],
                     description = it[MovieTable.description]
-                )
+                ),
+                unitPrice = it[ShowtimeTable.unitPrice]
             )
         }.toList()
     }

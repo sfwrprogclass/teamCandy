@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Theaters</title>
+</head>
+<body>
+    <h1>Now Showing</h1>
+
+    <nav>
+        <a th:if="${prevDate != null}" th:href="'/?date=' + ${prevDate}">&laquo; Prev</a>
+        <span th:if="${prevDate == null}">&laquo; Prev</span>
+
+        <strong th:text="${#temporals.format(selectedDate, 'EEEE, MMMM d')}">Monday, April 7</strong>
+
+        <a th:if="${nextDate != null}" th:href="'/?date=' + ${nextDate}">Next &raquo;</a>
+        <span th:if="${nextDate == null}">Next &raquo;</span>
+    </nav>
+
+    <p th:if="${#maps.isEmpty(showtimesByMovie)}">No showtimes scheduled for this day.</p>
+
+    <div th:each="entry : ${showtimesByMovie}">
+        <h2 th:text="${entry.key.name}">Movie Title</h2>
+
+        <ul>
+            <li th:each="showtime : ${entry.value}">
+                <span th:text="${#temporals.format(showtime.startTime, 'h:mm a')}">12:00 PM</span>
+                &ndash;
+                <span th:text="${#temporals.format(showtime.endTime, 'h:mm a')}">2:15 PM</span>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>
