@@ -63,6 +63,31 @@ object TheaterRepository : TheaterRepositoryInterface {
         }.toList()
     }
 
+    override fun getTheaterByAuditoriums(auditoriumId: Int): Theater? = transaction {
+        (AuditoriumTable innerJoin TheaterTable)
+            .select { AuditoriumTable.id eq auditoriumId }
+            .map {
+                Theater(
+                    id = it[TheaterTable.id],
+                    name = it[TheaterTable.name],
+                    location = it[TheaterTable.location]
+                )
+            }
+            .firstOrNull()
+    }
+
+    override fun getAuditoriumById(id: Int): Auditorium? = transaction {
+        AuditoriumTable.select { AuditoriumTable.id eq id }.map {
+            Auditorium(
+                id = it[AuditoriumTable.id],
+                number = it[AuditoriumTable.number],
+                theaterId = it[AuditoriumTable.theaterId],
+                rows = it[AuditoriumTable.rows],
+                seatsPerRow = it[AuditoriumTable.seatsPerRow]
+            )
+        }.singleOrNull() as Auditorium
+    }
+
     override fun addAuditorium(auditorium: Auditorium): Int = transaction {
         AuditoriumTable.insert {
             it[number] = auditorium.number
