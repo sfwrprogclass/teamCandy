@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movie Details</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      color: #222;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #0077cc;
+      font-weight: bold;
+    }
+
+    .movie-card {
+      background: white;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .movie-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .movie-info {
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .movie-description {
+      margin-top: 20px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding: 12px;
+      }
+
+      .movie-card {
+        padding: 16px;
+      }
+
+      .movie-title {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="MoviesList.html" class="back-link">← Back to Movies</a>
+  <div id="movieDetails"></div>
+  <p id="status" class="status">Loading movie...</p>
+</div>
+
+<script>
+  async function loadMovieDetails() {
+    const movieDetails = document.getElementById("movieDetails");
+    const status = document.getElementById("status");
+
+    const params = new URLSearchParams(window.location.search);
+    const movieId = params.get("id");
+
+    if (!movieId) {
+      status.textContent = "No movie id provided.";
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/movie/${movieId}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch movie");
+      }
+
+      const movie = await response.json();
+
+      status.style.display = "none";
+
+      movieDetails.innerHTML = `
+        <div class="movie-card">
+          <div class="movie-title">${movie.name}</div>
+          <div class="movie-info"><strong>ID:</strong> ${movie.id}</div>
+          <div class="movie-info"><strong>Duration:</strong> ${movie.durationMinutes} min</div>
+          <div class="movie-info"><strong>Rating:</strong> ${movie.rating}/10</div>
+          <div class="movie-description"><strong>Description:</strong> ${movie.description}</div>
+        </div>
+      `;
+    } catch (error) {
+      status.textContent = "Error loading movie details.";
+      console.error(error);
+    }
+  }
+
+  loadMovieDetails();
+</script>
+</body>
+</html>

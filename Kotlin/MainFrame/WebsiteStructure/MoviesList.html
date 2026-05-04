@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movies</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      color: #222;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .movie-card {
+      display: block;
+      background: white;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .movie-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .movie-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .movie-info {
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding: 12px;
+      }
+
+      .movie-card {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Movie List</h1>
+  <div id="movieGrid" class="movie-grid"></div>
+  <p id="status" class="status">Loading movies...</p>
+</div>
+
+<script>
+  async function loadMovies() {
+    const movieGrid = document.getElementById("movieGrid");
+    const status = document.getElementById("status");
+
+    try {
+      const response = await fetch("http://localhost:8080/api/movies");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch movies");
+      }
+
+      const movies = await response.json();
+
+      if (!movies.length) {
+        status.textContent = "No movies found.";
+        return;
+      }
+
+      status.style.display = "none";
+
+      movies.forEach(movie => {
+        const card = document.createElement("div");
+        card.className = "movie-card";
+        card.addEventListener("click", () => {
+          window.location.href = `MovieDetails.html?id=${movie.id}`;
+        });
+
+        card.innerHTML = `
+          <div class="movie-title">${movie.name}</div>
+          <div class="movie-info"><strong>ID:</strong> ${movie.id}</div>
+          <div class="movie-info"><strong>Duration:</strong> ${movie.durationMinutes} min</div>
+          <div class="movie-info"><strong>Rating:</strong> ${movie.rating}/10</div>
+        `;
+
+        movieGrid.appendChild(card);
+      });
+    } catch (error) {
+      status.textContent = "Error loading movies.";
+      console.error(error);
+    }
+  }
+
+  loadMovies();
+</script>
+</body>
+</html>
