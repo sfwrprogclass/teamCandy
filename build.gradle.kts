@@ -1,7 +1,8 @@
 plugins {
     kotlin("jvm") version "2.3.0"
-    application
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("plugin.compose") version "2.3.0"
+    id("org.jetbrains.compose") version "1.11.0-beta03"
+    kotlin("plugin.serialization") version "2.3.0"
 }
 
 group = "edu.teamcandy"
@@ -9,6 +10,7 @@ version = "1.0-SNAPSHOT"
 val ktorVersion = "3.4.1"
 
 repositories {
+    google()
     mavenCentral()
 }
 
@@ -38,10 +40,23 @@ dependencies {
     //Swagger
     implementation("io.ktor:ktor-server-swagger:${ktorVersion}")
     implementation("io.ktor:ktor-server-openapi:${ktorVersion}")
+
+    // Compose Desktop
+    implementation(compose.desktop.currentOs)
 }
 
-application {
-    mainClass = "edu.teamcandy.MainKt"
+tasks.register<JavaExec>("runWeb") {
+    group = "application"
+    description = "Run the Ktor web server (customer side)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("edu.teamcandy.MainKt")
+    standardInput = System.`in`
+}
+
+compose.desktop {
+    application {
+        mainClass = "edu.teamcandy.desktop.MainKt"
+    }
 }
 
 kotlin {

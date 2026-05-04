@@ -45,6 +45,9 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+### SQLite test databases ###
+test_gui.db
+
 ###  Swagger ###
 docs/.swagger-codegen/
 docs/.swagger-codegen/VERSION
