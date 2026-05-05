@@ -10,6 +10,9 @@ import edu.teamcandy.models.Payment
 import edu.teamcandy.models.Seat
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
+import edu.teamcandy.services.exposed.TheaterRepository.getAuditoriumById
+import edu.teamcandy.services.exposed.TheaterRepository.getTheaterByAuditoriums
+import edu.teamcandy.services.exposed.TheaterRepository.getTheaterById
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -101,6 +104,51 @@ fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterfac
         }
 
         call.respond(showtimes)
+    }
+
+    get("/api/theatre/auditorium/{id}") {
+        val auditoriumId = call.parameters["id"]?.toIntOrNull()
+        if (auditoriumId == null) {
+            call.respond(HttpStatusCode.BadRequest, "Invalid auditorium ID")
+            return@get
+        }
+
+        val theater = getTheaterByAuditoriums(auditoriumId)
+        if (theater != null) {
+            call.respond(theater)
+        } else {
+            call.respond(HttpStatusCode.NotFound, "Theater not found for auditorium ID $auditoriumId")
+        }
+    }
+
+    get("/api/theatre/{id}") {
+        val theaterId = call.parameters["id"]?.toIntOrNull()
+        if (theaterId == null) {
+            call.respond(HttpStatusCode.BadRequest, "Invalid theater ID")
+            return@get
+        }
+
+        val theater = getTheaterById(theaterId)
+        if (theater != null) {
+            call.respond(theater)
+        } else {
+            call.respond(HttpStatusCode.NotFound, "Theater not found")
+        }
+    }
+
+    get("/api/auditorium/{id}") {
+        val auditoriumID = call.parameters["id"]?.toIntOrNull()
+        if (auditoriumID == null) {
+            call.respond(HttpStatusCode.BadRequest, "Invalid auditorium ID")
+            return@get
+        }
+
+        val auditorium = getAuditoriumById(auditoriumID)
+        if (auditorium != null) {
+            call.respond(auditorium)
+        } else {
+            call.respond(HttpStatusCode.NotFound, "Theater not found")
+        }
     }
 
     post("/api/showtimes/{id}/reserve") {

@@ -1,5 +1,8 @@
 package edu.teamcandy.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Auditorium(
     // Auditorium ID
     val id: Int = 0,

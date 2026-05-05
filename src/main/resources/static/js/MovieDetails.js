@@ -13,6 +13,7 @@ const reserveMessage = document.getElementById("reserveMessage");
 const selectionSummarySection = document.getElementById("selectionSummarySection");
 const summaryMovieName = document.getElementById("summaryMovieName");
 const summaryShowtime = document.getElementById("summaryShowtime");
+const summaryTheatre = document.getElementById("summaryTheatre");
 const summaryAuditorium = document.getElementById("summaryAuditorium");
 const summarySeats = document.getElementById("summarySeats");
 const summaryPrice = document.getElementById("summaryPrice");
@@ -34,6 +35,52 @@ const returnHomeButton = document.getElementById("returnHomeButton");
 
 let currentSelectedSeats = [];
 let currentShowtime = null;
+
+async function getTheaterByAuditorium(auditoriumId) {
+  try {
+    const response = await fetch("/api/theatre/auditorium/" + auditoriumId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const theater = await response.json();
+    return theater;
+  } catch (error) {
+    console.error("Error fetching theater:", error);
+  }
+}
+
+async function getTheaterNameByAuditorium(auditoriumId) {
+    try {
+        const theater = await getTheaterByAuditorium(auditoriumId);
+        return theater ? theater.name : "Unknown Theater";
+    } catch (error) {
+        console.error("Error fetching theater name:", error);
+        return "Unknown Theater";
+    }
+}
+
+async function getAuditoriumInfo(auditoriumId) {
+    try {
+        const response = await fetch("/api/auditorium/" + auditoriumId);
+        if (!response.ok) throw new Error("Failed to fetch auditorium");
+
+        const auditorium = await response.json();
+        const theaterName = await getTheaterNameByAuditorium(auditoriumId);
+
+        return {
+            number: auditorium.number,
+            theaterName: theaterName
+        };
+    } catch (error) {
+        console.error("Error fetching auditorium info:", error);
+        return {
+            number: auditoriumId,      // fallback
+            theaterName: "Unknown Theater"
+        };
+    }
+}
 
 function getDateString(date) {
     let year = date.getFullYear();
@@ -110,53 +157,55 @@ function updateReserveMessage() {
     }
 }
 
-function showSelectionSummary() {
+async function showSelectionSummary() {
     if (currentShowtime == null || currentSelectedSeats.length == 0) {
         selectionSummarySection.classList.add("hidden");
         return;
     }
 
-    let seatLabels = [];
-
-    for (let i = 0; i < currentSelectedSeats.length; i++) {
-        seatLabels.push(getSeatLabel(currentSelectedSeats[i].row, currentSelectedSeats[i].number));
-    }
-
+    let seatLabels = currentSelectedSeats.map(s => getSeatLabel(s.row, s.number));
     let unitPrice = currentShowtime.unitPrice;
     let totalPrice = unitPrice * currentSelectedSeats.length;
 
     summaryMovieName.innerHTML = movieName;
     summaryShowtime.innerHTML = getTime(currentShowtime.startTime);
-    summaryAuditorium.innerHTML = currentShowtime.auditoriumId;
+
+    const { number: auditoriumNumber, theaterName } = await getAuditoriumInfo(currentShowtime.auditoriumId);
+    summaryAuditorium.innerHTML = auditoriumNumber;
+    summaryTheatre.innerHTML = theaterName;
+
     summarySeats.innerHTML = seatLabels.join(", ");
     summaryPrice.innerHTML =
         currentSelectedSeats.length + " × $" + unitPrice.toFixed(2) + " = $" + totalPrice.toFixed(2);
 
     clearPaymentFields();
-
     selectionSummarySection.classList.remove("hidden");
+
     window.scrollTo({
         top: document.body.scrollHeight,
         behavior: "smooth"
     });
 }
 
-function showSeating(showtime, clickedCard) {
+async function showSeating(showtime, clickedCard) {
     removeActiveShowtimes();
-    clickedCard.classList.add("active");
+        clickedCard.classList.add("active");
 
-    currentShowtime = showtime;
-    currentSelectedSeats = [];
+        currentShowtime = showtime;
+        currentSelectedSeats = [];
+        reserveMessage.innerHTML = "";
+        seatingChart.innerHTML = "";
+        clearPaymentFields();
+        selectionSummarySection.classList.add("hidden");
+        seatingSection.classList.remove("hidden");
 
-    reserveMessage.innerHTML = "";
-    seatingChart.innerHTML = "";
-    clearPaymentFields();
+        const { number: auditoriumNumber, theaterName } = await getAuditoriumInfo(showtime.auditoriumId);
 
-    selectionSummarySection.classList.add("hidden");
-    seatingSection.classList.remove("hidden");
+        seatingHeader.innerHTML =
+            `Showtime: ${getTime(showtime.startTime)} | ${theaterName} | Auditorium ${auditoriumNumber}`;
 
-    seatingHeader.innerHTML = "Showtime: " + getTime(showtime.startTime) + " | Auditorium " + showtime.auditoriumId;
 
+    // Render seats
     for (let i = 0; i < showtime.seatingChart.length; i++) {
         let rowDiv = document.createElement("div");
         rowDiv.className = "seat-row";
@@ -254,9 +303,25 @@ async function loadShowtimes(dateString, dateLabel) {
 
             let seatsAvailable = countAvailableSeats(showtime.seatingChart);
 
+            let auditoriumNumber = showtime.auditoriumId; // fallback
+            let theaterName = "Unknown Theater";
+
+            try {
+                const response = await fetch("/api/auditorium/" + showtime.auditoriumId);
+                if (response.ok) {
+                    const auditorium = await response.json();
+                    auditoriumNumber = auditorium.number;
+
+                    theaterName = await getTheaterNameByAuditorium(showtime.auditoriumId);
+                }
+            } catch (error) {
+                console.error("Error fetching auditorium/theater info:", error);
+            }
+
             card.innerHTML =
                 "<div class='showtime-time'>" + getTime(showtime.startTime) + "</div>" +
-                "<div class='showtime-meta'>Auditorium " + showtime.auditoriumId +
+                "<div class='showtime-meta'>" + theaterName + "</div>" +
+                "<div class='showtime-meta'>" + " Auditorium " + auditoriumNumber +
                 "<br>" + seatsAvailable + " seats available</div>";
 
             card.onclick = function () {
