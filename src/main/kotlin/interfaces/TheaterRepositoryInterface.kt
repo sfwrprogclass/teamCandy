@@ -11,6 +11,8 @@ interface TheaterRepositoryInterface {
     fun deleteTheater(id: Int): Boolean
     
     fun getAuditoriumsByTheater(theaterId: Int): List<Auditorium>
+    fun getAuditoriumById(theaterId: Int): Auditorium?
+    fun getTheaterByAuditoriums(auditoriumId: Int): Theater?
     fun addAuditorium(auditorium: Auditorium): Int
     fun updateAuditorium(auditorium: Auditorium): Boolean
     fun deleteAuditorium(id: Int): Boolean

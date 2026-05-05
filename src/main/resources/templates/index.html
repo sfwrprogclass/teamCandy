@@ -1,35 +1,145 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candy Theaters</title>
+    <style>
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+
+        body {
+          font-family: Arial, sans-serif;
+          background: #f4f4f4;
+          color: #222;
+          padding: 20px;
+        }
+
+        .container {
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+
+        .header h1 {
+          margin-bottom: 10px;
+        }
+
+        .header p {
+          color: #555;
+        }
+
+        h2 {
+          margin-bottom: 16px;
+        }
+
+        .movie-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .movie-card {
+          background: white;
+          border-radius: 10px;
+          padding: 16px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .movie-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+        }
+
+        .movie-title {
+          font-size: 1.1rem;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+
+        .movie-info {
+          margin-bottom: 8px;
+          font-size: 0.95rem;
+        }
+
+        .status {
+          text-align: center;
+          margin-top: 20px;
+          font-size: 1rem;
+        }
+
+        @media (max-width: 500px) {
+          body {
+            padding: 12px;
+          }
+        }
+    </style>
 </head>
 <body>
-    <h1>Now Showing</h1>
-
-    <nav>
-        <a th:if="${prevDate != null}" th:href="'/?date=' + ${prevDate}">&laquo; Prev</a>
-        <span th:if="${prevDate == null}">&laquo; Prev</span>
-
-        <strong th:text="${#temporals.format(selectedDate, 'EEEE, MMMM d')}">Monday, April 7</strong>
-
-        <a th:if="${nextDate != null}" th:href="'/?date=' + ${nextDate}">Next &raquo;</a>
-        <span th:if="${nextDate == null}">Next &raquo;</span>
-    </nav>
-
-    <p th:if="${#maps.isEmpty(showtimesByMovie)}">No showtimes scheduled for this day.</p>
-
-    <div th:each="entry : ${showtimesByMovie}">
-        <h2 th:text="${entry.key.name}">Movie Title</h2>
-
-        <ul>
-            <li th:each="showtime : ${entry.value}">
-                <span th:text="${#temporals.format(showtime.startTime, 'h:mm a')}">12:00 PM</span>
-                &ndash;
-                <span th:text="${#temporals.format(showtime.endTime, 'h:mm a')}">2:15 PM</span>
-            </li>
-        </ul>
+<div class="container">
+    <div class="header">
+        <h1>Candy Theaters</h1>
+        <p>Browse movies and buy Tickets</p>
     </div>
+
+    <h2>Now Showing</h2>
+    <div id="movieGrid" class="movie-grid"></div>
+    <p id="status" class="status">Loading movies...</p>
+</div>
+
+<script>
+    async function loadMovies() {
+      const movieGrid = document.getElementById("movieGrid");
+      const status = document.getElementById("status");
+
+      try {
+        const response = await fetch("/api/movies");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch movies");
+        }
+
+        const movies = await response.json();
+
+        if (!movies.length) {
+          status.textContent = "No movies found.";
+          return;
+        }
+
+        status.style.display = "none";
+
+        movies.forEach(movie => {
+          const card = document.createElement("div");
+          card.className = "movie-card";
+
+          card.addEventListener("click", () => {
+            window.location.href = `/movies/${movie.id}`;
+          });
+
+          card.innerHTML = `
+            <div class="movie-title">${movie.name}</div>
+            <div class="movie-info"><strong>Duration:</strong> ${movie.durationMinutes} min</div>
+            <div class="movie-info"><strong>Rating:</strong> ${movie.rating}</div>
+          `;
+
+          movieGrid.appendChild(card);
+        });
+      } catch (error) {
+        status.textContent = "Error loading movies.";
+        console.error(error);
+      }
+    }
+
+    loadMovies();
+</script>
 </body>
 </html>

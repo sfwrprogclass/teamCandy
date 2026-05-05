@@ -1,4 +1,4 @@
-package edu.teamcandy.repository
+package edu.teamcandy.interfaces
 
 import edu.teamcandy.models.Movie
 

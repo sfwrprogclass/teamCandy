@@ -38,6 +38,28 @@ object ShowtimeTable : Table("showtimes") {
     val startTime = datetime("start_time").default(LocalDateTime.now())
     val paddingMinutes = integer("padding_minutes").default(15)
     val auditoriumId = integer("auditorium_id").references(AuditoriumTable.id)
+    val unitPrice = double("unit_price").default(12.00)
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object SeatTable : Table("seats") {
+
+    val id = integer("id").autoIncrement()
+    val showtimeId = integer("showtime_id").references(ShowtimeTable.id)
+    val row = integer("row_number")
+    val seatNumber = integer("seat_number")
+    override val primaryKey = PrimaryKey(id)
+
+}
+
+object PaymentMethodTable : Table("payment_methods") {
+    val id = integer("id").autoIncrement()
+
+    val nameOnCard = varchar("name_on_card", 255)
+    val cardNumber = varchar("card_number", 30)
+    val expiry = varchar("expiry", 10)
+    val cvv = varchar("cvv", 10)
 
     override val primaryKey = PrimaryKey(id)
 }
