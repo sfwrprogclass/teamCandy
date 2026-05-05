@@ -6,6 +6,7 @@ import edu.teamcandy.exposed.PaymentMethodTable
 import edu.teamcandy.exposed.SeatTable
 import edu.teamcandy.exposed.ShowtimeTable
 import edu.teamcandy.exposed.TheaterTable
+import edu.teamcandy.exposed.TicketTable
 import edu.teamcandy.models.Auditorium
 import edu.teamcandy.models.Theater
 import edu.teamcandy.routes.defaultRoutes
@@ -30,10 +31,25 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
+private var isInitialized = false
+
 fun init() {
+    if (isInitialized) return
     Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable)
+        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, TicketTable)
+
+        // Manual migration for missing columns in movies table
+        try {
+            exec("ALTER TABLE movies ADD COLUMN cast TEXT DEFAULT ''")
+        } catch (e: Exception) {
+            // Column might already exist
+        }
+        try {
+            exec("ALTER TABLE movies ADD COLUMN genres TEXT DEFAULT ''")
+        } catch (e: Exception) {
+            // Column might already exist
+        }
 
         // Seed initial data if no theaters exist
         if (TheaterTable.selectAll().empty()) {
@@ -52,11 +68,28 @@ fun init() {
             }
         }
     }
+    isInitialized = true
 }
+
+private var isApiStarted = false
+
 fun startApiAndDatabase() {
+    if (isApiStarted) return
     Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, SeatTable, PaymentMethodTable)
+        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, SeatTable, PaymentMethodTable, TicketTable)
+        
+        // Manual migration for missing columns in movies table
+        try {
+            exec("ALTER TABLE movies ADD COLUMN cast TEXT DEFAULT ''")
+        } catch (e: Exception) {
+            // Column might already exist
+        }
+        try {
+            exec("ALTER TABLE movies ADD COLUMN genres TEXT DEFAULT ''")
+        } catch (e: Exception) {
+            // Column might already exist
+        }
     }
 
     embeddedServer(Netty, port = 8080) {
@@ -86,4 +119,5 @@ fun startApiAndDatabase() {
         }
         println("Web API is running at http://localhost:8080")
     }.start(wait = false)
+    isApiStarted = true
 }

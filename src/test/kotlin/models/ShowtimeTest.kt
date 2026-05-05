@@ -1,5 +1,7 @@
 package edu.teamcandy.models
 
+import edu.teamcandy.models.Movie
+import edu.teamcandy.models.Auditorium
 import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -39,6 +39,8 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
                     name = it[MovieTable.name],
                     durationMinutes = it[MovieTable.durationMinutes],
                     rating = it[MovieTable.rating],
+                    cast = it[MovieTable.cast].split(",").filter { s -> s.isNotBlank() },
+                    genres = it[MovieTable.genres].split(",").filter { s -> s.isNotBlank() },
                     description = it[MovieTable.description]
                 ),
                 unitPrice = it[ShowtimeTable.unitPrice]
@@ -61,15 +63,14 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
         }
     }
 
-    override fun addShowtime(showtime: Showtime) {
-        transaction {
-            ShowtimeTable.insert {
-                it[movie] = showtime.movie.id
-                it[startTime] = showtime.startTime
-                it[paddingMinutes] = showtime.paddingMinutes
-                it[auditoriumId] = showtime.auditoriumId
-            }
-        }
+    override fun addShowtime(showtime: Showtime): Int = transaction {
+        ShowtimeTable.insert {
+            it[movie] = showtime.movie.id
+            it[startTime] = showtime.startTime
+            it[paddingMinutes] = showtime.paddingMinutes
+            it[auditoriumId] = showtime.auditoriumId
+            it[unitPrice] = showtime.unitPrice
+        } get ShowtimeTable.id
     }
 
     override fun updateShowtime(id: Int, showtime: Showtime): Boolean = transaction {
@@ -85,5 +86,48 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
     override fun deleteShowtime(id: Int): Boolean = transaction {
         val rowsDeleted = ShowtimeTable.deleteWhere { ShowtimeTable.id eq id }
         rowsDeleted > 0
+    }
+
+    override fun getTicketsSoldByTheaterAndDateRange(
+        theaterId: Int,
+        startDate: LocalDateTime,
+        endDate: LocalDateTime
+    ): List<Pair<Showtime, Int>> = transaction {
+        val ticketCount = TicketTable.id.count()
+        (TicketTable innerJoin ShowtimeTable innerJoin AuditoriumTable innerJoin MovieTable)
+            .slice(
+                ShowtimeTable.id, ShowtimeTable.startTime, ShowtimeTable.paddingMinutes, ShowtimeTable.auditoriumId, ShowtimeTable.unitPrice,
+                MovieTable.id, MovieTable.name, MovieTable.durationMinutes, MovieTable.rating, MovieTable.cast, MovieTable.genres, MovieTable.description,
+                ticketCount
+            )
+            .select {
+                (AuditoriumTable.theaterId eq theaterId) and
+                (TicketTable.soldAt greaterEq startDate) and
+                (TicketTable.soldAt lessEq endDate)
+            }
+            .groupBy(
+                ShowtimeTable.id, ShowtimeTable.startTime, ShowtimeTable.paddingMinutes, ShowtimeTable.auditoriumId, ShowtimeTable.unitPrice,
+                MovieTable.id, MovieTable.name, MovieTable.durationMinutes, MovieTable.rating, MovieTable.cast, MovieTable.genres, MovieTable.description
+            )
+            .map {
+                val showtime = Showtime(
+                    id = it[ShowtimeTable.id],
+                    startTime = it[ShowtimeTable.startTime],
+                    paddingMinutes = it[ShowtimeTable.paddingMinutes],
+                    auditoriumId = it[ShowtimeTable.auditoriumId],
+                    seatingChart = emptyList(), // Not needed for report
+                    movie = Movie(
+                        id = it[MovieTable.id],
+                        name = it[MovieTable.name],
+                        durationMinutes = it[MovieTable.durationMinutes],
+                        rating = it[MovieTable.rating],
+                        cast = it[MovieTable.cast].split(",").filter { s -> s.isNotBlank() },
+                        genres = it[MovieTable.genres].split(",").filter { s -> s.isNotBlank() },
+                        description = it[MovieTable.description]
+                    ),
+                    unitPrice = it[ShowtimeTable.unitPrice]
+                )
+                showtime to it[ticketCount].toInt()
+            }
     }
 }

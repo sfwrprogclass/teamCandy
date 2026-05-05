@@ -9,6 +9,8 @@ object MovieTable : Table("movies") {
     val name = varchar("name", 255)
     val durationMinutes = integer("duration_minutes")
     val rating = varchar("rating", 10)
+    val cast = text("cast").default("")
+    val genres = text("genres").default("")
     val description = text("description")
 
     override val primaryKey = PrimaryKey(id)
@@ -51,6 +53,16 @@ object SeatTable : Table("seats") {
     val seatNumber = integer("seat_number")
     override val primaryKey = PrimaryKey(id)
 
+}
+
+object TicketTable : Table("tickets") {
+    val id = integer("id").autoIncrement()
+    val showtimeId = integer("showtime_id").references(ShowtimeTable.id)
+    val row = integer("row_number")
+    val seatNumber = integer("seat_number")
+    val soldAt = datetime("sold_at").default(LocalDateTime.now())
+
+    override val primaryKey = PrimaryKey(id)
 }
 
 object PaymentMethodTable : Table("payment_methods") {

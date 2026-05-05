@@ -12,16 +12,19 @@ import org.jetbrains.exposed.sql.update
 
 object MovieRepository : MovieRepositoryInterface {
 
-    override fun addMovie(movie: Movie) {
-        transaction {
+    override fun addMovie(movie: Movie): Int {
+        val id = transaction {
             MovieTable.insert {
                 it[name] = movie.name
                 it[durationMinutes] = movie.durationMinutes
                 it[rating] = movie.rating
+                it[cast] = movie.cast.joinToString(",")
+                it[genres] = movie.genres.joinToString(",")
                 it[description] = movie.description
-            }
+            } get MovieTable.id
         }
         println("Saved ${movie.name} to the database!")
+        return id
     }
 
     override fun getAllMovies(): List<Movie> = transaction {
@@ -31,6 +34,8 @@ object MovieRepository : MovieRepositoryInterface {
                 name = it[MovieTable.name],
                 durationMinutes = it[MovieTable.durationMinutes],
                 rating = it[MovieTable.rating],
+                cast = it[MovieTable.cast].split(",").filter { s -> s.isNotBlank() },
+                genres = it[MovieTable.genres].split(",").filter { s -> s.isNotBlank() },
                 description = it[MovieTable.description]
             )
         }.toList()
@@ -41,6 +46,8 @@ object MovieRepository : MovieRepositoryInterface {
             it[name] = updatedMovie.name
             it[durationMinutes] = updatedMovie.durationMinutes
             it[rating] = updatedMovie.rating
+            it[cast] = updatedMovie.cast.joinToString(",")
+            it[genres] = updatedMovie.genres.joinToString(",")
             it[description] = updatedMovie.description
         }
         rowsUpdated > 0

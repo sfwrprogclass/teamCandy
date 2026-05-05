@@ -1,5 +1,6 @@
 package edu.teamcandy
 
+import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Seat
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.services.BookingService
@@ -24,7 +25,7 @@ class ConcurrentPurchaseTest {
         transaction {
             SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, TicketTable)
         }
-        
+
         try {
             // Ensure we have at least one movie and showtime in the REAL database
             val showtime = transaction {
@@ -54,7 +55,7 @@ class ConcurrentPurchaseTest {
                     it[paddingMinutes] = 15
                     it[auditoriumId] = audId
                 } get ShowtimeTable.id
-                
+
                 ShowtimeRepository.getAllShowtimes().first { it.id == showtimeId }
             }
 
