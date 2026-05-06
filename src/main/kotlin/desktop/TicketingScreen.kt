@@ -28,7 +28,12 @@ fun TicketingScreen() {
     var selectedAuditorium by remember { mutableStateOf<Auditorium?>(null) }
     var showtimes by remember { mutableStateOf(listOf<Showtime>()) }
     var selectedShowtime by remember { mutableStateOf<Showtime?>(null) }
+    var selectedSeats by remember { mutableStateOf(setOf<Pair<Int, Int>>()) }
     var statusMessage by remember { mutableStateOf("Please select a theater and auditorium to see showtimes.") }
+
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    var showResultDialog by remember { mutableStateOf(false) }
+    var resultMessage by remember { mutableStateOf("") }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Panel - Selection
@@ -45,6 +50,7 @@ fun TicketingScreen() {
                             selectedTheater = theater
                             selectedAuditorium = null
                             selectedShowtime = null
+                            selectedSeats = setOf()
                             showtimes = listOf()
                             theaterExpanded = false
                         }) {
@@ -65,6 +71,7 @@ fun TicketingScreen() {
                         DropdownMenuItem(onClick = {
                             selectedAuditorium = aud
                             selectedShowtime = null
+                            selectedSeats = setOf()
                             showtimes = ShowtimeRepository.getAllShowtimes().filter { it.auditoriumId == aud.id }
                             audExpanded = false
                             if (showtimes.isEmpty()) statusMessage = "No showtimes found for this auditorium."
@@ -87,6 +94,7 @@ fun TicketingScreen() {
                     ) {
                         TextButton(onClick = {
                             selectedShowtime = showtime
+                            selectedSeats = setOf()
                             statusMessage = "Selling tickets for ${showtime.movie.name}"
                         }) {
                             Text(
@@ -119,25 +127,29 @@ fun TicketingScreen() {
                                 val r = index / cols
                                 val c = index % cols
                                 val seat = showtime.seatingChart[r][c]
+                                val isSelected = selectedSeats.contains(r to c)
                                 
                                 Button(
                                     onClick = {
-                                        val result = bookingService.sellTicket(showtime, r, c)
-                                        if (result.contains("successfully")) {
-                                            // Refresh showtime data
-                                            selectedShowtime = ShowtimeRepository.getAllShowtimes().find { it.id == showtime.id }
+                                        selectedSeats = if (isSelected) {
+                                            selectedSeats - (r to c)
+                                        } else {
+                                            selectedSeats + (r to c)
                                         }
-                                        statusMessage = result
                                     },
                                     enabled = !seat.isReserved,
                                     colors = ButtonDefaults.buttonColors(
-                                        backgroundColor = if (seat.isReserved) Color.Red else Color.Green,
+                                        backgroundColor = when {
+                                            seat.isReserved -> Color.Red
+                                            isSelected -> Color.Yellow
+                                            else -> Color.Green
+                                        },
                                         disabledBackgroundColor = Color.Red
                                     ),
                                     modifier = Modifier.aspectRatio(1f),
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
-                                    Text("${'A' + r}${c + 1}", style = MaterialTheme.typography.caption, color = Color.White)
+                                    Text("${'A' + r}${c + 1}", style = MaterialTheme.typography.caption, color = if (isSelected) Color.Black else Color.White)
                                 }
                             }
                         }
@@ -146,17 +158,73 @@ fun TicketingScreen() {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(statusMessage, modifier = Modifier.weight(1f))
+                
+                if (selectedSeats.isNotEmpty()) {
+                    Button(onClick = { showConfirmationDialog = true }) {
+                        Text("Confirm Selection (${selectedSeats.size})")
+                    }
+                }
+
                 Button(onClick = {
                     theaters = TheaterRepository.getAllTheaters()
-                    selectedShowtime?.let {
-                        selectedShowtime = ShowtimeRepository.getAllShowtimes().find { it.id == it.id }
+                    selectedShowtime?.let { current ->
+                        selectedShowtime = ShowtimeRepository.getAllShowtimes().find { it.id == current.id }
                     }
+                    selectedSeats = setOf()
                 }) {
                     Text("Refresh")
                 }
             }
         }
+    }
+
+    if (showConfirmationDialog && selectedShowtime != null) {
+        val showtime = selectedShowtime!!
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            title = { Text("Confirm Purchase") },
+            text = {
+                Column {
+                    Text("Movie: ${showtime.movie.name}")
+                    Text("Time: ${showtime.startTime}")
+                    Text("Seats: ${selectedSeats.joinToString(", ") { (r, c) -> "${'A' + r}${c + 1}" }}")
+                    Text("Total Price: $${"%.2f".format(selectedSeats.size * showtime.unitPrice)}")
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showConfirmationDialog = false
+                    val result = bookingService.sellTickets(showtime, selectedSeats.toList())
+                    resultMessage = result
+                    if (result.contains("successfully")) {
+                        selectedShowtime = ShowtimeRepository.getAllShowtimes().find { it.id == showtime.id }
+                        selectedSeats = setOf()
+                    }
+                    showResultDialog = true
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmationDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showResultDialog) {
+        AlertDialog(
+            onDismissRequest = { showResultDialog = false },
+            title = { Text(if (resultMessage.contains("successfully")) "Success" else "Failure") },
+            text = { Text(resultMessage) },
+            confirmButton = {
+                Button(onClick = { showResultDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }

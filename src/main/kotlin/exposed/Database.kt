@@ -63,6 +63,10 @@ object TicketTable : Table("tickets") {
     val soldAt = datetime("sold_at").default(LocalDateTime.now())
 
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        uniqueIndex("idx_ticket_showtime_seat", showtimeId, row, seatNumber)
+    }
 }
 
 object PaymentMethodTable : Table("payment_methods") {

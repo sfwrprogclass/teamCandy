@@ -63,6 +63,22 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
         }
     }
 
+    override fun reserveSeats(showtimeId: Int, seats: List<Pair<Int, Int>>): Boolean = transaction {
+        try {
+            val now = LocalDateTime.now()
+            TicketTable.batchInsert(seats) { (r, c) ->
+                this[TicketTable.showtimeId] = showtimeId
+                this[TicketTable.row] = r
+                this[TicketTable.seatNumber] = c
+                this[TicketTable.soldAt] = now
+            }
+            true
+        } catch (e: Exception) {
+            rollback()
+            false
+        }
+    }
+
     override fun addShowtime(showtime: Showtime): Int = transaction {
         ShowtimeTable.insert {
             it[movie] = showtime.movie.id
