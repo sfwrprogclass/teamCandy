@@ -3,7 +3,6 @@ package edu.teamcandy.services.exposed
 import edu.teamcandy.exposed.AuditoriumTable
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.exposed.PaymentMethodTable
-import edu.teamcandy.exposed.SeatTable
 import edu.teamcandy.exposed.ShowtimeTable
 import edu.teamcandy.exposed.TheaterTable
 import edu.teamcandy.exposed.TicketTable
@@ -132,7 +131,7 @@ fun startApiAndDatabase() {
     if (isApiStarted) return
     Database.connect("jdbc:sqlite:./theater.db", "org.sqlite.JDBC")
     transaction {
-        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, SeatTable, PaymentMethodTable, TicketTable)
+        SchemaUtils.create(MovieTable, ShowtimeTable, TheaterTable, AuditoriumTable, PaymentMethodTable, TicketTable)
         
         // Manual migration for missing columns in movies table
         try {

@@ -3,8 +3,8 @@ package edu.teamcandy.routes
 import edu.teamcandy.exposed.AuditoriumTable
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.exposed.PaymentMethodTable
-import edu.teamcandy.exposed.SeatTable
 import edu.teamcandy.exposed.ShowtimeTable
+import edu.teamcandy.exposed.TicketTable
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Payment
 import edu.teamcandy.models.Seat
@@ -23,6 +23,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.LocalDateTime
 
 fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterface) {
     get("/api/movies/{id}/showtimes") {
@@ -70,13 +71,13 @@ fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterfac
                     val rows = it[AuditoriumTable.rows]
                     val seatsPerRow = it[AuditoriumTable.seatsPerRow]
 
-                    val reservedSeats = SeatTable
+                    val reservedSeats = TicketTable
                         .selectAll()
-                        .where { SeatTable.showtimeId eq showtimeId }
+                        .where { TicketTable.showtimeId eq showtimeId }
                         .map {
                             Pair(
-                                it[SeatTable.row],
-                                it[SeatTable.seatNumber]
+                                it[TicketTable.row],
+                                it[TicketTable.seatNumber]
                             )
                         }
                         .toSet()
@@ -151,40 +152,6 @@ fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterfac
         }
     }
 
-    post("/api/showtimes/{id}/reserve") {
-        val showtimeId = call.parameters["id"]?.toIntOrNull()
-
-        if (showtimeId == null) {
-            call.respond(HttpStatusCode.BadRequest, "Invalid showtime id")
-            return@post
-        }
-
-        val seats = call.receive<List<Seat>>()
-
-        transaction {
-            for (seat in seats) {
-                val alreadyReserved = SeatTable
-                    .selectAll()
-                    .where {
-                        (SeatTable.showtimeId eq showtimeId) and
-                                (SeatTable.row eq seat.row) and
-                                (SeatTable.seatNumber eq seat.number)
-                    }
-                    .count() > 0
-
-                if (!alreadyReserved) {
-                    SeatTable.insert {
-                        it[SeatTable.showtimeId] = showtimeId
-                        it[SeatTable.row] = seat.row
-                        it[SeatTable.seatNumber] = seat.number
-                    }
-                }
-            }
-        }
-
-        call.respond(HttpStatusCode.OK, "Seats reserved successfully")
-    }
-
     post("/api/showtimes/{id}/pay-and-reserve") {
         val showtimeId = call.parameters["id"]?.toIntOrNull()
 
@@ -214,20 +181,21 @@ fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterfac
 
         transaction {
             for (seat in request.seats) {
-                val alreadyReserved = SeatTable
+                val alreadyReserved = TicketTable
                     .selectAll()
                     .where {
-                        (SeatTable.showtimeId eq showtimeId) and
-                                (SeatTable.row eq seat.row) and
-                                (SeatTable.seatNumber eq seat.number)
+                        (TicketTable.showtimeId eq showtimeId) and
+                                (TicketTable.row eq seat.row) and
+                                (TicketTable.seatNumber eq seat.number)
                     }
                     .count() > 0
 
                 if (!alreadyReserved) {
-                    SeatTable.insert {
-                        it[SeatTable.showtimeId] = showtimeId
-                        it[SeatTable.row] = seat.row
-                        it[SeatTable.seatNumber] = seat.number
+                    TicketTable.insert {
+                        it[TicketTable.showtimeId] = showtimeId
+                        it[TicketTable.row] = seat.row
+                        it[TicketTable.seatNumber] = seat.number
+                        it[TicketTable.soldAt] = LocalDateTime.now()
                     }
                 }
             }

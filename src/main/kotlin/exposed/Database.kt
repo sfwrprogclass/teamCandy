@@ -45,16 +45,6 @@ object ShowtimeTable : Table("showtimes") {
     override val primaryKey = PrimaryKey(id)
 }
 
-object SeatTable : Table("seats") {
-
-    val id = integer("id").autoIncrement()
-    val showtimeId = integer("showtime_id").references(ShowtimeTable.id)
-    val row = integer("row_number")
-    val seatNumber = integer("seat_number")
-    override val primaryKey = PrimaryKey(id)
-
-}
-
 object TicketTable : Table("tickets") {
     val id = integer("id").autoIncrement()
     val showtimeId = integer("showtime_id").references(ShowtimeTable.id)
