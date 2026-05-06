@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MovieLoginPage</title>
+    <link rel="stylesheet" href="MainStyles.css">
+</head>
+<body>
+
+
+<div class="LoginContainer">
+    <form class="login-box" id="loginForm">
+        <h2>Login</h2>
+
+
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter username" required>
+
+
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" required>
+
+
+        <button type="submit">Login</button>
+    </form>
+</div>
+<footer>
+    <a href="Website.view.html" class="back-btn">
+        ⬅ Back to Main Website
+    </a>
+
+
+    <button id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
+
+
+    <div class="footer-bottom">
+        <p>&copy; 2026 (Movie Website). All rights reserved.</p>
+    </div>
+</footer>
+<script src="Java.js"></script>
+<script src="LoginScript.js"></script>
+</body>
+</html>

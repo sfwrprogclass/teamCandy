@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Information</title>
+    <link rel="stylesheet" href="MainStyles.css">
+</head>
+<body>
+
+
+<div class="header">
+    <header class="f-header" id="moving-header">
+        Movie.
+    </header>
+</div>
+
+
+<div id="movieContent" style="padding: 20px;"></div>
+
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const movieId = params.get("id");
+
+
+    fetch("http://localhost:8080/api/movies")
+        .then(res => res.json())
+        .then(movies => {
+            const movie = movies.find(m => m.id == movieId);
+            const content = document.getElementById("movieContent");
+
+
+    if (movie) {
+        const imgSrc =
+            movie.imageUrl && movie.imageUrl.trim() !== ""
+                ? movie.imageUrl
+                : "Image/Movie.png";
+
+
+        content.innerHTML = `
+            <h1>${movie.name}</h1>
+            <img src="${imgSrc}" style="width:220px; border-radius:8px; margin-bottom:16px;">
+            <p><strong>Duration:</strong> ${movie.durationMinutes} minutes</p>
+            <p><strong>Rating:</strong> ${movie.rating}</p>
+            <p><strong>Description:</strong> ${movie.description}</p>
+        `;
+            } else {
+                content.innerHTML = "<h2>This movie is no longer available.</h2>";
+            }
+        })
+        .catch(err => console.error("Error loading movie info:", err));
+</script>
+
+
+<footer>
+    <a href="Website.view.html" class="back-btn">
+        ⬅ Back to Main Website
+    </a>
+
+
+    <button id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
+
+
+    <div class="footer-bottom">
+        <p>&copy; 2026 (Movie Website). All rights reserved.</p>
+    </div>
+</footer>
+<script src="Java.js"></script>
+
+
+</body>
+</html>
