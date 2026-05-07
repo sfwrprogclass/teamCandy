@@ -22,6 +22,10 @@ private val DISPLAY_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy  h:mm a")
 @Composable
 fun ShowtimesScreen() {
     var allShowtimes by remember { mutableStateOf(ShowtimeRepository.getAllShowtimes()) }
+    val theaters = remember { TheaterRepository.getAllTheaters() }
+    val auditoriumLabels = remember(theaters) {
+        theaters.flatMap { t -> t.auditoriums.map { a -> a.id to "${t.name} — Aud. ${a.number}" } }.toMap()
+    }
     var showUpcomingOnly by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -65,7 +69,7 @@ fun ShowtimesScreen() {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(showtime.movie.name, style = MaterialTheme.typography.subtitle1)
                                 Text(showtime.startTime.format(DISPLAY_FORMAT), style = MaterialTheme.typography.body2)
-                                Text("Auditorium ID: ${showtime.auditoriumId}", style = MaterialTheme.typography.caption)
+                                Text(auditoriumLabels[showtime.auditoriumId] ?: "Auditorium ${showtime.auditoriumId}", style = MaterialTheme.typography.caption)
                             }
                             OutlinedButton(onClick = {
                                 ShowtimeRepository.deleteShowtime(showtime.id)
