@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
+import java.util.UUID
 
 object ShowtimeRepository : ShowtimeRepositoryInterface {
 
@@ -48,34 +49,42 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
         }.toList()
     }
 
-    override fun reserveSeat(showtimeId: Int, row: Int, seatNumber: Int): Boolean = transaction {
+    private fun generateConfirmationCode(): String {
+        val hex = UUID.randomUUID().toString().replace("-", "").uppercase()
+        return "${hex.substring(0, 4)}-${hex.substring(4, 8)}-${hex.substring(8, 12)}"
+    }
+
+    override fun reserveSeat(showtimeId: Int, row: Int, seatNumber: Int): String? = transaction {
         try {
+            val code = generateConfirmationCode()
             TicketTable.insert {
                 it[TicketTable.showtimeId] = showtimeId
                 it[TicketTable.row] = row
                 it[TicketTable.seatNumber] = seatNumber
                 it[TicketTable.soldAt] = LocalDateTime.now()
+                it[TicketTable.confirmationCode] = code
             }
-            true
+            code
         } catch (e: Exception) {
-            // Unique constraint violation or other error
-            false
+            null
         }
     }
 
-    override fun reserveSeats(showtimeId: Int, seats: List<Pair<Int, Int>>): Boolean = transaction {
+    override fun reserveSeats(showtimeId: Int, seats: List<Pair<Int, Int>>): String? = transaction {
         try {
+            val code = generateConfirmationCode()
             val now = LocalDateTime.now()
             TicketTable.batchInsert(seats) { (r, c) ->
                 this[TicketTable.showtimeId] = showtimeId
                 this[TicketTable.row] = r
                 this[TicketTable.seatNumber] = c
                 this[TicketTable.soldAt] = now
+                this[TicketTable.confirmationCode] = code
             }
-            true
+            code
         } catch (e: Exception) {
             rollback()
-            false
+            null
         }
     }
 

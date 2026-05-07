@@ -51,6 +51,7 @@ object TicketTable : Table("tickets") {
     val row = integer("row_number")
     val seatNumber = integer("seat_number")
     val soldAt = datetime("sold_at").default(LocalDateTime.now())
+    val confirmationCode = varchar("confirmation_code", 20).nullable()
 
     override val primaryKey = PrimaryKey(id)
 
