@@ -22,6 +22,9 @@ import edu.teamcandy.services.BookingService
 import edu.teamcandy.services.exposed.ShowtimeRepository
 import edu.teamcandy.services.exposed.TheaterRepository
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+private val DISPLAY_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy  h:mm a")
 
 @Composable
 fun TicketingScreen() {
@@ -104,7 +107,7 @@ fun TicketingScreen() {
                             statusMessage = "Selling tickets for ${showtime.movie.name}"
                         }) {
                             Text(
-                                "${showtime.movie.name}\n${showtime.startTime}",
+                                "${showtime.movie.name}\n${showtime.startTime.format(DISPLAY_FORMAT)}",
                                 color = if (isSelected) contentColorFor(MaterialTheme.colors.primarySurface) else contentColorFor(MaterialTheme.colors.surface)
                             )
                         }
@@ -204,7 +207,7 @@ fun TicketingScreen() {
             text = {
                 Column {
                     Text("Movie: ${showtime.movie.name}")
-                    Text("Time: ${showtime.startTime}")
+                    Text("Time: ${showtime.startTime.format(DISPLAY_FORMAT)}")
                     Text("Seats: ${selectedSeats.joinToString(", ") { (r, c) -> "${'A' + r}${c + 1}" }}")
                     Text("Total Price: $${"%.2f".format(selectedSeats.size * showtime.unitPrice)}")
                 }
