@@ -137,17 +137,33 @@
 </div>
 
 <div id="paymentDialog" class="dialog hidden">
-  <div class="dialog-box">
+  <div class="dialog-box" id="dialogBox">
     <div id="dialogTitle" class="dialog-title">Processing Payment</div>
     <div id="dialogMessage" class="dialog-message">Please wait...</div>
 
     <div id="dialogSpinner" class="dialog-spinner"></div>
 
+    <div id="ticketReceipt" class="ticket-receipt hidden">
+      <div class="ticket-header">CANDY CINEMA</div>
+      <div class="ticket-details">
+        <div id="ticketMovieName" class="ticket-movie"></div>
+        <div id="ticketShowtime" class="ticket-info"></div>
+        <div id="ticketSeats" class="ticket-info"></div>
+        <div id="ticketPrice" class="ticket-info ticket-price"></div>
+      </div>
+      <div class="ticket-divider"></div>
+      <div class="ticket-qr-section">
+        <img id="ticketQrCode" src="" alt="QR Code" class="ticket-qr" />
+        <div id="ticketCode" class="ticket-code"></div>
+        <div class="ticket-hint">Present at the theater entrance</div>
+      </div>
+      <button id="printTicketButton" class="print-button" type="button">Print Ticket</button>
+    </div>
+
     <div id="dialogActions" class="dialog-actions hidden">
       <button id="backToPaymentButton" class="dialog-button hidden" type="button">
         Back to Payment
       </button>
-
       <button id="returnHomeButton" class="dialog-button hidden" type="button">
         Return Home
       </button>

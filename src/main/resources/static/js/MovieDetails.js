@@ -387,9 +387,19 @@ function showFailedDialog() {
     returnHomeButton.classList.add("hidden");
 }
 
-function showSuccessDialog() {
-    dialogTitle.innerHTML = "Payment Successful";
-    dialogMessage.innerHTML = "Your seats have been reserved successfully.";
+function showTicketDialog(receipt) {
+    dialogTitle.innerHTML = "";
+    dialogMessage.innerHTML = "";
+
+    document.getElementById("ticketMovieName").innerHTML = receipt.movieName;
+    document.getElementById("ticketShowtime").innerHTML = receipt.startTime;
+    document.getElementById("ticketSeats").innerHTML = "Seats: " + receipt.seats.join(", ");
+    document.getElementById("ticketPrice").innerHTML = "Total: $" + receipt.totalPrice.toFixed(2);
+    document.getElementById("ticketCode").innerHTML = receipt.confirmationCode;
+    document.getElementById("ticketQrCode").src = "data:image/png;base64," + receipt.qrCodeBase64;
+
+    document.getElementById("ticketReceipt").classList.remove("hidden");
+    document.getElementById("dialogBox").classList.add("dialog-box-ticket");
 
     dialogSpinner.classList.add("hidden");
     dialogActions.classList.remove("hidden");
@@ -485,6 +495,8 @@ payButton.onclick = async function () {
             return;
         }
 
+        const receipt = await response.json();
+
         for (let i = 0; i < currentSelectedSeats.length; i++) {
             let selectedSeat = currentSelectedSeats[i];
 
@@ -496,11 +508,11 @@ payButton.onclick = async function () {
             selectedSeat.button.disabled = true;
         }
 
-        paymentMessage.innerHTML = "Payment successful. Seats reserved.";
+        paymentMessage.innerHTML = "";
         reserveMessage.innerHTML = "";
         currentSelectedSeats = [];
 
-        showSuccessDialog();
+        showTicketDialog(receipt);
     } catch (error) {
         console.log(error);
         showFailedDialog();
@@ -513,6 +525,57 @@ backToPaymentButton.onclick = function () {
 
 returnHomeButton.onclick = function () {
     window.location.href = "/";
+};
+
+document.getElementById("printTicketButton").onclick = function () {
+    const movieName = document.getElementById("ticketMovieName").innerHTML;
+    const showtime  = document.getElementById("ticketShowtime").innerHTML;
+    const seats     = document.getElementById("ticketSeats").innerHTML;
+    const price     = document.getElementById("ticketPrice").innerHTML;
+    const code      = document.getElementById("ticketCode").innerHTML;
+    const qrSrc     = document.getElementById("ticketQrCode").src;
+
+    const win = window.open("", "_blank", "width=420,height=640");
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Ticket</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: white; }
+    .header { background: #1e3a5f; color: white; text-align: center; padding: 14px;
+              font-size: 20px; font-weight: bold; letter-spacing: 3px; border-radius: 8px 8px 0 0; }
+    .details { border: 1px solid #ccc; border-top: none; padding: 16px; }
+    .movie { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .info  { font-size: 13px; color: #444; margin-bottom: 4px; }
+    .bold  { font-weight: bold; }
+    .divider { border: none; border-top: 2px dashed #ccc; margin: 12px 0; }
+    .qr-section { border: 1px solid #ccc; border-top: none; padding: 16px; text-align: center;
+                  border-radius: 0 0 8px 8px; }
+    .qr-section img { width: 160px; height: 160px; display: block; margin: 0 auto 10px; }
+    .code { font-family: monospace; font-size: 20px; font-weight: bold;
+            color: #1e3a5f; letter-spacing: 2px; margin-bottom: 6px; }
+    .hint { font-size: 11px; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="header">CANDY CINEMA</div>
+  <div class="details">
+    <div class="movie">${movieName}</div>
+    <div class="info">${showtime}</div>
+    <div class="info">${seats}</div>
+    <div class="info bold">${price}</div>
+  </div>
+  <hr class="divider">
+  <div class="qr-section">
+    <img src="${qrSrc}" alt="QR Code"/>
+    <div class="code">${code}</div>
+    <div class="hint">Present at the theater entrance</div>
+  </div>
+  <script>window.onload = function () { window.print(); window.close(); }<\/script>
+</body>
+</html>`);
+    win.document.close();
 };
 
 clearPaymentFields();
