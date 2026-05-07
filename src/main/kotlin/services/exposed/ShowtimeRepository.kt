@@ -88,7 +88,23 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
         }
     }
 
-    override fun addShowtime(showtime: Showtime): Int = transaction {
+    override fun addShowtime(showtime: Showtime): Int? = transaction {
+        val newStart = showtime.startTime
+        val newEnd = showtime.endTime
+
+        val hasConflict = (ShowtimeTable innerJoin MovieTable)
+            .selectAll()
+            .where { ShowtimeTable.auditoriumId eq showtime.auditoriumId }
+            .any { row ->
+                val existingStart = row[ShowtimeTable.startTime]
+                val existingEnd = existingStart.plusMinutes(
+                    (row[MovieTable.durationMinutes] + row[ShowtimeTable.paddingMinutes]).toLong()
+                )
+                newStart < existingEnd && existingStart < newEnd
+            }
+
+        if (hasConflict) return@transaction null
+
         ShowtimeTable.insert {
             it[movie] = showtime.movie.id
             it[startTime] = showtime.startTime
