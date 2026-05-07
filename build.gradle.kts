@@ -53,11 +53,13 @@ tasks.register<JavaExec>("runWeb") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("edu.teamcandy.MainKt")
     standardInput = System.`in`
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 compose.desktop {
     application {
         mainClass = "edu.teamcandy.desktop.MainKt"
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 }
 

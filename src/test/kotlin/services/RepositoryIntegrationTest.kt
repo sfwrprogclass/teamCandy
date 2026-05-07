@@ -4,6 +4,7 @@ import edu.teamcandy.exposed.AuditoriumTable
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.exposed.ShowtimeTable
 import edu.teamcandy.exposed.TheaterTable
+import edu.teamcandy.exposed.TicketTable
 import edu.teamcandy.models.Auditorium
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Seat
@@ -33,24 +34,24 @@ class RepositoryIntegrationTest {
     @BeforeTest
     fun setUp() {
         transaction {
-            SchemaUtils.create(MovieTable, TheaterTable, AuditoriumTable, ShowtimeTable)
+            SchemaUtils.create(MovieTable, TheaterTable, AuditoriumTable, ShowtimeTable, TicketTable)
         }
     }
 
     @AfterTest
     fun tearDown() {
         transaction {
-            SchemaUtils.drop(ShowtimeTable, AuditoriumTable, TheaterTable, MovieTable)
+            SchemaUtils.drop(TicketTable, ShowtimeTable, AuditoriumTable, TheaterTable, MovieTable)
         }
     }
 
     // --- Movies ---
 
     @Test
-    fun `GUI add movie - persists to database and is retrievable`() {
+    fun `Add movie - persists to database and is retrievable`() {
         MovieRepository.addMovie(Movie(name = "Inception", durationMinutes = 148, rating = "PG-13"))
 
-        val movies = MovieRepository.getAllMovies()
+        val movies = MovieRepository.getAllMovies().filter { it.name == "Inception" }
 
         assertEquals(1, movies.size)
         assertEquals("Inception", movies[0].name)
@@ -59,22 +60,22 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    fun `GUI delete movie - removes it from the database`() {
+    fun `Delete movie - removes it from the database`() {
         MovieRepository.addMovie(Movie(name = "To Delete", durationMinutes = 90))
-        val id = MovieRepository.getAllMovies().first().id
+        val id = MovieRepository.getAllMovies().find { it.name == "To Delete" }!!.id
 
         assertTrue(MovieRepository.deleteMovie(id))
-        assertTrue(MovieRepository.getAllMovies().isEmpty())
+        assertTrue(MovieRepository.getAllMovies().none { it.name == "To Delete" })
     }
 
     @Test
-    fun `GUI edit movie - updates name, duration, and rating`() {
+    fun `Edit movie - updates name, duration, and rating`() {
         MovieRepository.addMovie(Movie(name = "Old Title", durationMinutes = 90))
-        val id = MovieRepository.getAllMovies().first().id
+        val id = MovieRepository.getAllMovies().find { it.name == "Old Title" }!!.id
 
         MovieRepository.updateMovie(id, Movie(name = "New Title", durationMinutes = 110, rating = "R"))
 
-        val updated = MovieRepository.getAllMovies().first()
+        val updated = MovieRepository.getAllMovies().find { it.name == "New Title" }!!
         assertEquals("New Title", updated.name)
         assertEquals(110, updated.durationMinutes)
         assertEquals("R", updated.rating)
@@ -83,10 +84,10 @@ class RepositoryIntegrationTest {
     // --- Theaters & Auditoriums ---
 
     @Test
-    fun `GUI add theater - persists and is retrievable`() {
+    fun `Add theater - persists and is retrievable`() {
         TheaterRepository.addTheater(Theater(name = "Galaxy Cinema", location = "Uptown"))
 
-        val theaters = TheaterRepository.getAllTheaters()
+        val theaters = TheaterRepository.getAllTheaters().filter { it.name == "Galaxy Cinema" }
 
         assertEquals(1, theaters.size)
         assertEquals("Galaxy Cinema", theaters[0].name)
@@ -94,8 +95,8 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    fun `GUI add auditorium - links to theater and is retrievable`() {
-        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema", location = "Uptown"))
+    fun `Add auditorium - links to theater and is retrievable`() {
+        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema 2", location = "Uptown"))
 
         TheaterRepository.addAuditorium(Auditorium(number = 2, theaterId = theaterId, rows = 8, seatsPerRow = 12))
 
@@ -107,8 +108,8 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    fun `GUI delete auditorium - removes it from the theater`() {
-        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema", location = "Uptown"))
+    fun `Delete auditorium - removes it from the theater`() {
+        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema 3", location = "Uptown"))
         val audId = TheaterRepository.addAuditorium(Auditorium(number = 1, theaterId = theaterId))
 
         assertTrue(TheaterRepository.deleteAuditorium(audId))
@@ -118,10 +119,10 @@ class RepositoryIntegrationTest {
     // --- Showtimes ---
 
     @Test
-    fun `GUI add showtime - persists and is retrievable with correct movie and time`() {
+    fun `Add showtime - persists and is retrievable with correct movie and time`() {
         MovieRepository.addMovie(Movie(name = "Dune", durationMinutes = 155))
-        val movie = MovieRepository.getAllMovies().first()
-        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema", location = "Uptown"))
+        val movie = MovieRepository.getAllMovies().find { it.name == "Dune" }!!
+        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema 4", location = "Uptown"))
         val audId = TheaterRepository.addAuditorium(Auditorium(number = 1, theaterId = theaterId))
 
         val startTime = LocalDateTime.of(2026, 6, 15, 19, 30)
@@ -134,7 +135,7 @@ class RepositoryIntegrationTest {
             )
         )
 
-        val showtimes = ShowtimeRepository.getAllShowtimes()
+        val showtimes = ShowtimeRepository.getAllShowtimes().filter { it.movie.name == "Dune" }
         assertEquals(1, showtimes.size)
         assertEquals("Dune", showtimes[0].movie.name)
         assertEquals(startTime, showtimes[0].startTime)
@@ -142,10 +143,10 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    fun `GUI delete showtime - removes it from the database`() {
-        MovieRepository.addMovie(Movie(name = "Dune", durationMinutes = 155))
-        val movie = MovieRepository.getAllMovies().first()
-        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema", location = "Uptown"))
+    fun `Delete showtime - removes it from the database`() {
+        MovieRepository.addMovie(Movie(name = "Dune 2", durationMinutes = 155))
+        val movie = MovieRepository.getAllMovies().find { it.name == "Dune 2" }!!
+        val theaterId = TheaterRepository.addTheater(Theater(name = "Galaxy Cinema 5", location = "Uptown"))
         val audId = TheaterRepository.addAuditorium(Auditorium(number = 1, theaterId = theaterId))
 
         ShowtimeRepository.addShowtime(
@@ -156,9 +157,9 @@ class RepositoryIntegrationTest {
                 seatingChart = List(5) { r -> List(10) { c -> Seat(r, c) } }
             )
         )
-        val id = ShowtimeRepository.getAllShowtimes().first().id
+        val id = ShowtimeRepository.getAllShowtimes().find { it.movie.name == "Dune 2" }!!.id
 
         assertTrue(ShowtimeRepository.deleteShowtime(id))
-        assertTrue(ShowtimeRepository.getAllShowtimes().isEmpty())
+        assertTrue(ShowtimeRepository.getAllShowtimes().none { it.movie.name == "Dune 2" })
     }
 }

@@ -10,10 +10,13 @@ import androidx.compose.ui.window.application
 import edu.teamcandy.services.exposed.init
 import edu.teamcandy.services.exposed.startApiAndDatabase
 
-fun main() = application {
+fun main() {
     startApiAndDatabase()
     init()
+    startComposeApp()
+}
 
+fun startComposeApp() = application {
     Window(onCloseRequest = ::exitApplication, title = "Candy Theaters — Admin") {
         MaterialTheme {
             AdminApp()
@@ -41,6 +44,8 @@ fun AdminApp() {
                 AdminTab.MOVIES -> MoviesScreen()
                 AdminTab.THEATERS -> TheatersScreen()
                 AdminTab.SHOWTIMES -> ShowtimesScreen()
+                AdminTab.TICKETING -> TicketingScreen()
+                AdminTab.REPORTS -> ReportsScreen()
             }
         }
     }
@@ -49,5 +54,7 @@ fun AdminApp() {
 enum class AdminTab(val label: String) {
     MOVIES("Movies"),
     THEATERS("Theaters & Auditoriums"),
-    SHOWTIMES("Showtimes")
+    SHOWTIMES("Showtimes"),
+    TICKETING("Ticketing"),
+    REPORTS("Reports")
 }

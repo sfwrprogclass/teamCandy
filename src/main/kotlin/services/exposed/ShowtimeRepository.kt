@@ -2,32 +2,45 @@ package edu.teamcandy.services.exposed
 
 import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Showtime
-import edu.teamcandy.exposed.MovieTable
-import edu.teamcandy.exposed.ShowtimeTable
+import edu.teamcandy.exposed.*
+import edu.teamcandy.models.Seat
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 object ShowtimeRepository : ShowtimeRepositoryInterface {
 
     override fun getAllShowtimes(): List<Showtime> = transaction {
-        (ShowtimeTable innerJoin MovieTable).selectAll().map {
+        val tickets = TicketTable.selectAll().toList()
+
+        (ShowtimeTable innerJoin MovieTable innerJoin AuditoriumTable).selectAll().map {
+            val showId = it[ShowtimeTable.id]
+            val rows = it[AuditoriumTable.rows]
+            val seatsPerRow = it[AuditoriumTable.seatsPerRow]
+
+            val showtimeTickets = tickets.filter { t -> t[TicketTable.showtimeId] == showId }
+
+            val seatingChart = List(rows) { r ->
+                List(seatsPerRow) { c ->
+                    Seat(r, c, isReserved = showtimeTickets.any { t -> t[TicketTable.row] == r && t[TicketTable.seatNumber] == c })
+                }
+            }
+
             Showtime(
-                id = it[ShowtimeTable.id],
+                id = showId,
                 startTime = it[ShowtimeTable.startTime],
                 paddingMinutes = it[ShowtimeTable.paddingMinutes],
                 auditoriumId = it[ShowtimeTable.auditoriumId],
-                seatingChart = List(5) { r -> List(10) { c -> edu.teamcandy.models.Seat(r, c) } },
+                seatingChart = seatingChart,
                 movie = Movie(
                     id = it[MovieTable.id],
                     name = it[MovieTable.name],
                     durationMinutes = it[MovieTable.durationMinutes],
                     rating = it[MovieTable.rating],
+                    cast = it[MovieTable.cast].split(",").filter { s -> s.isNotBlank() },
+                    genres = it[MovieTable.genres].split(",").filter { s -> s.isNotBlank() },
                     description = it[MovieTable.description]
                 ),
                 unitPrice = it[ShowtimeTable.unitPrice]
@@ -35,15 +48,45 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
         }.toList()
     }
 
-    override fun addShowtime(showtime: Showtime) {
-        transaction {
-            ShowtimeTable.insert {
-                it[movie] = showtime.movie.id
-                it[startTime] = showtime.startTime
-                it[paddingMinutes] = showtime.paddingMinutes
-                it[auditoriumId] = showtime.auditoriumId
+    override fun reserveSeat(showtimeId: Int, row: Int, seatNumber: Int): Boolean = transaction {
+        try {
+            TicketTable.insert {
+                it[TicketTable.showtimeId] = showtimeId
+                it[TicketTable.row] = row
+                it[TicketTable.seatNumber] = seatNumber
+                it[TicketTable.soldAt] = LocalDateTime.now()
             }
+            true
+        } catch (e: Exception) {
+            // Unique constraint violation or other error
+            false
         }
+    }
+
+    override fun reserveSeats(showtimeId: Int, seats: List<Pair<Int, Int>>): Boolean = transaction {
+        try {
+            val now = LocalDateTime.now()
+            TicketTable.batchInsert(seats) { (r, c) ->
+                this[TicketTable.showtimeId] = showtimeId
+                this[TicketTable.row] = r
+                this[TicketTable.seatNumber] = c
+                this[TicketTable.soldAt] = now
+            }
+            true
+        } catch (e: Exception) {
+            rollback()
+            false
+        }
+    }
+
+    override fun addShowtime(showtime: Showtime): Int = transaction {
+        ShowtimeTable.insert {
+            it[movie] = showtime.movie.id
+            it[startTime] = showtime.startTime
+            it[paddingMinutes] = showtime.paddingMinutes
+            it[auditoriumId] = showtime.auditoriumId
+            it[unitPrice] = showtime.unitPrice
+        } get ShowtimeTable.id
     }
 
     override fun updateShowtime(id: Int, showtime: Showtime): Boolean = transaction {
@@ -59,5 +102,48 @@ object ShowtimeRepository : ShowtimeRepositoryInterface {
     override fun deleteShowtime(id: Int): Boolean = transaction {
         val rowsDeleted = ShowtimeTable.deleteWhere { ShowtimeTable.id eq id }
         rowsDeleted > 0
+    }
+
+    override fun getTicketsSoldByTheaterAndDateRange(
+        theaterId: Int,
+        startDate: LocalDateTime,
+        endDate: LocalDateTime
+    ): List<Pair<Showtime, Int>> = transaction {
+        val ticketCount = TicketTable.id.count()
+        (TicketTable innerJoin ShowtimeTable innerJoin AuditoriumTable innerJoin MovieTable)
+            .slice(
+                ShowtimeTable.id, ShowtimeTable.startTime, ShowtimeTable.paddingMinutes, ShowtimeTable.auditoriumId, ShowtimeTable.unitPrice,
+                MovieTable.id, MovieTable.name, MovieTable.durationMinutes, MovieTable.rating, MovieTable.cast, MovieTable.genres, MovieTable.description,
+                ticketCount
+            )
+            .select {
+                (AuditoriumTable.theaterId eq theaterId) and
+                (TicketTable.soldAt greaterEq startDate) and
+                (TicketTable.soldAt lessEq endDate)
+            }
+            .groupBy(
+                ShowtimeTable.id, ShowtimeTable.startTime, ShowtimeTable.paddingMinutes, ShowtimeTable.auditoriumId, ShowtimeTable.unitPrice,
+                MovieTable.id, MovieTable.name, MovieTable.durationMinutes, MovieTable.rating, MovieTable.cast, MovieTable.genres, MovieTable.description
+            )
+            .map {
+                val showtime = Showtime(
+                    id = it[ShowtimeTable.id],
+                    startTime = it[ShowtimeTable.startTime],
+                    paddingMinutes = it[ShowtimeTable.paddingMinutes],
+                    auditoriumId = it[ShowtimeTable.auditoriumId],
+                    seatingChart = emptyList(), // Not needed for report
+                    movie = Movie(
+                        id = it[MovieTable.id],
+                        name = it[MovieTable.name],
+                        durationMinutes = it[MovieTable.durationMinutes],
+                        rating = it[MovieTable.rating],
+                        cast = it[MovieTable.cast].split(",").filter { s -> s.isNotBlank() },
+                        genres = it[MovieTable.genres].split(",").filter { s -> s.isNotBlank() },
+                        description = it[MovieTable.description]
+                    ),
+                    unitPrice = it[ShowtimeTable.unitPrice]
+                )
+                showtime to it[ticketCount].toInt()
+            }
     }
 }
