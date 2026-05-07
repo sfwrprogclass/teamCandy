@@ -13,6 +13,7 @@ import edu.teamcandy.models.Showtime
 import edu.teamcandy.services.exposed.MovieRepository
 import edu.teamcandy.services.exposed.ShowtimeRepository
 import edu.teamcandy.services.exposed.TheaterRepository
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -20,12 +21,32 @@ private val DISPLAY_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy  h:mm a")
 
 @Composable
 fun ShowtimesScreen() {
-    var showtimes by remember { mutableStateOf(ShowtimeRepository.getAllShowtimes()) }
+    var allShowtimes by remember { mutableStateOf(ShowtimeRepository.getAllShowtimes()) }
+    var showUpcomingOnly by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
 
+    val showtimes = if (showUpcomingOnly)
+        allShowtimes.filter { !it.startTime.toLocalDate().isBefore(LocalDate.now()) }
+    else
+        allShowtimes
+
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Showtimes", style = MaterialTheme.typography.h5, modifier = Modifier.weight(1f))
+            OutlinedButton(
+                onClick = { showUpcomingOnly = true },
+                colors = if (showUpcomingOnly)
+                    ButtonDefaults.outlinedButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.15f))
+                else
+                    ButtonDefaults.outlinedButtonColors()
+            ) { Text("Upcoming") }
+            OutlinedButton(
+                onClick = { showUpcomingOnly = false },
+                colors = if (!showUpcomingOnly)
+                    ButtonDefaults.outlinedButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.15f))
+                else
+                    ButtonDefaults.outlinedButtonColors()
+            ) { Text("All") }
             Button(onClick = { showAddDialog = true }) { Text("Schedule Showtime") }
         }
 
@@ -48,7 +69,7 @@ fun ShowtimesScreen() {
                             }
                             OutlinedButton(onClick = {
                                 ShowtimeRepository.deleteShowtime(showtime.id)
-                                showtimes = ShowtimeRepository.getAllShowtimes()
+                                allShowtimes = ShowtimeRepository.getAllShowtimes()
                             }) { Text("Remove") }
                         }
                     }
@@ -62,7 +83,7 @@ fun ShowtimesScreen() {
             onDismiss = { showAddDialog = false },
             onConfirm = { showtime ->
                 ShowtimeRepository.addShowtime(showtime)
-                showtimes = ShowtimeRepository.getAllShowtimes()
+                allShowtimes = ShowtimeRepository.getAllShowtimes()
                 showAddDialog = false
             }
         )

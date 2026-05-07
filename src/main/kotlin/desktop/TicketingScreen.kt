@@ -19,6 +19,7 @@ import edu.teamcandy.models.Auditorium
 import edu.teamcandy.services.BookingService
 import edu.teamcandy.services.exposed.ShowtimeRepository
 import edu.teamcandy.services.exposed.TheaterRepository
+import java.time.LocalDate
 
 @Composable
 fun TicketingScreen() {
@@ -72,7 +73,9 @@ fun TicketingScreen() {
                             selectedAuditorium = aud
                             selectedShowtime = null
                             selectedSeats = setOf()
-                            showtimes = ShowtimeRepository.getAllShowtimes().filter { it.auditoriumId == aud.id }
+                            showtimes = ShowtimeRepository.getAllShowtimes()
+                                .filter { it.auditoriumId == aud.id }
+                                .filter { !it.startTime.toLocalDate().isBefore(LocalDate.now()) }
                             audExpanded = false
                             if (showtimes.isEmpty()) statusMessage = "No showtimes found for this auditorium."
                             else statusMessage = "Select a showtime to view seating."
