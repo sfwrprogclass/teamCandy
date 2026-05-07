@@ -4,14 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.models.Theater
@@ -115,44 +113,54 @@ fun TicketingScreen() {
             Text("Seating Chart", style = MaterialTheme.typography.h6)
             Spacer(modifier = Modifier.height(8.dp))
             
-            Box(modifier = Modifier.weight(1f).fillMaxWidth().background(Color.LightGray.copy(alpha = 0.2f)).padding(16.dp)) {
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth().background(Color.LightGray.copy(alpha = 0.2f))) {
                 selectedShowtime?.let { showtime ->
                     val rows = showtime.seatingChart.size
                     val cols = if (rows > 0) showtime.seatingChart[0].size else 0
-                    
+
                     if (rows > 0 && cols > 0) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(cols),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        val padding = 16.dp
+                        val spacing = 4.dp
+                        val availableWidth = maxWidth - padding * 2
+                        val availableHeight = maxHeight - padding * 2
+                        val cellSize = minOf(
+                            (availableWidth - spacing * (cols - 1)) / cols,
+                            (availableHeight - spacing * (rows - 1)) / rows
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(spacing),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(padding).align(Alignment.Center)
                         ) {
-                            items(rows * cols) { index ->
-                                val r = index / cols
-                                val c = index % cols
-                                val seat = showtime.seatingChart[r][c]
-                                val isSelected = selectedSeats.contains(r to c)
-                                
-                                Button(
-                                    onClick = {
-                                        selectedSeats = if (isSelected) {
-                                            selectedSeats - (r to c)
-                                        } else {
-                                            selectedSeats + (r to c)
+                            repeat(rows) { r ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                                    repeat(cols) { c ->
+                                        val seat = showtime.seatingChart[r][c]
+                                        val isSelected = selectedSeats.contains(r to c)
+                                        Button(
+                                            onClick = {
+                                                selectedSeats = if (isSelected) {
+                                                    selectedSeats - (r to c)
+                                                } else {
+                                                    selectedSeats + (r to c)
+                                                }
+                                            },
+                                            enabled = !seat.isReserved,
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = when {
+                                                    seat.isReserved -> Color.Red
+                                                    isSelected -> Color.Yellow
+                                                    else -> Color.Green
+                                                },
+                                                disabledBackgroundColor = Color.Red
+                                            ),
+                                            modifier = Modifier.size(cellSize),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("${'A' + r}${c + 1}", style = MaterialTheme.typography.caption.copy(fontWeight = FontWeight.Bold), color = Color.Black)
                                         }
-                                    },
-                                    enabled = !seat.isReserved,
-                                    colors = ButtonDefaults.buttonColors(
-                                        backgroundColor = when {
-                                            seat.isReserved -> Color.Red
-                                            isSelected -> Color.Yellow
-                                            else -> Color.Green
-                                        },
-                                        disabledBackgroundColor = Color.Red
-                                    ),
-                                    modifier = Modifier.aspectRatio(1f),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("${'A' + r}${c + 1}", style = MaterialTheme.typography.caption, color = if (isSelected) Color.Black else Color.White)
+                                    }
                                 }
                             }
                         }
