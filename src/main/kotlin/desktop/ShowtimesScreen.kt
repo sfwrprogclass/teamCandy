@@ -28,12 +28,14 @@ fun ShowtimesScreen() {
     }
     var showUpcomingOnly by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var banner by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
 
     val showtimes = if (showUpcomingOnly)
         allShowtimes.filter { !it.startTime.toLocalDate().isBefore(LocalDate.now()) }
     else
         allShowtimes
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Showtimes", style = MaterialTheme.typography.h5, modifier = Modifier.weight(1f))
@@ -72,8 +74,10 @@ fun ShowtimesScreen() {
                                 Text(auditoriumLabels[showtime.auditoriumId] ?: "Auditorium ${showtime.auditoriumId}", style = MaterialTheme.typography.caption)
                             }
                             OutlinedButton(onClick = {
-                                ShowtimeRepository.deleteShowtime(showtime.id)
+                                val success = ShowtimeRepository.deleteShowtime(showtime.id)
                                 allShowtimes = ShowtimeRepository.getAllShowtimes()
+                                banner = if (success) true to "Showtime removed."
+                                         else false to "Failed to remove showtime."
                             }) { Text("Remove") }
                         }
                     }
@@ -81,6 +85,16 @@ fun ShowtimesScreen() {
             }
         }
     }
+
+    banner?.let { (isSuccess, msg) ->
+        StatusBanner(
+            message = msg,
+            isSuccess = isSuccess,
+            onDismiss = { banner = null },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+} // closes Box
 
     if (showAddDialog) {
         AddShowtimeDialog(
@@ -90,6 +104,7 @@ fun ShowtimesScreen() {
                 if (id != null) {
                     allShowtimes = ShowtimeRepository.getAllShowtimes()
                     showAddDialog = false
+                    banner = true to "Showtime scheduled for ${showtime.movie.name}."
                     true
                 } else {
                     false
