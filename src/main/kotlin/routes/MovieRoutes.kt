@@ -3,6 +3,7 @@ package edu.teamcandy.routes
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.models.Movie
 import edu.teamcandy.interfaces.MovieRepositoryInterface
+import edu.teamcandy.services.exposed.ShowtimeRepository
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -15,12 +16,23 @@ import io.ktor.server.routing.route
 import io.ktor.server.thymeleaf.ThymeleafContent
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.LocalDate
 
 fun Route.movieRoutes(repository: MovieRepositoryInterface) {
     route("/api/movies") {
 
         get {
             val movies: List<Movie> = repository.getAllMovies()
+            call.respond<List<Movie>>(movies)
+        }
+
+        get("/active") {
+            val today = LocalDate.now().atStartOfDay()
+            val activeMovieIds = ShowtimeRepository.getAllShowtimes()
+                .filter { !it.startTime.isBefore(today) }
+                .map { it.movie.id }
+                .toSet()
+            val movies = repository.getAllMovies().filter { it.id in activeMovieIds }
             call.respond<List<Movie>>(movies)
         }
 

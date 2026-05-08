@@ -1,24 +1,30 @@
 package edu.teamcandy.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import edu.teamcandy.models.Showtime
 import edu.teamcandy.models.Theater
 import edu.teamcandy.models.Auditorium
+import edu.teamcandy.models.TicketReceipt
 import edu.teamcandy.services.BookingService
 import edu.teamcandy.services.exposed.ShowtimeRepository
 import edu.teamcandy.services.exposed.TheaterRepository
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+private val DISPLAY_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy  h:mm a")
 
 @Composable
 fun TicketingScreen() {
@@ -33,7 +39,8 @@ fun TicketingScreen() {
 
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var showResultDialog by remember { mutableStateOf(false) }
-    var resultMessage by remember { mutableStateOf("") }
+    var lastReceipt by remember { mutableStateOf<TicketReceipt?>(null) }
+    var saleFailedMessage by remember { mutableStateOf("") }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Panel - Selection
@@ -72,7 +79,9 @@ fun TicketingScreen() {
                             selectedAuditorium = aud
                             selectedShowtime = null
                             selectedSeats = setOf()
-                            showtimes = ShowtimeRepository.getAllShowtimes().filter { it.auditoriumId == aud.id }
+                            showtimes = ShowtimeRepository.getAllShowtimes()
+                                .filter { it.auditoriumId == aud.id }
+                                .filter { !it.startTime.toLocalDate().isBefore(LocalDate.now()) }
                             audExpanded = false
                             if (showtimes.isEmpty()) statusMessage = "No showtimes found for this auditorium."
                             else statusMessage = "Select a showtime to view seating."
@@ -98,7 +107,7 @@ fun TicketingScreen() {
                             statusMessage = "Selling tickets for ${showtime.movie.name}"
                         }) {
                             Text(
-                                "${showtime.movie.name}\n${showtime.startTime}",
+                                "${showtime.movie.name}\n${showtime.startTime.format(DISPLAY_FORMAT)}",
                                 color = if (isSelected) contentColorFor(MaterialTheme.colors.primarySurface) else contentColorFor(MaterialTheme.colors.surface)
                             )
                         }
@@ -112,44 +121,54 @@ fun TicketingScreen() {
             Text("Seating Chart", style = MaterialTheme.typography.h6)
             Spacer(modifier = Modifier.height(8.dp))
             
-            Box(modifier = Modifier.weight(1f).fillMaxWidth().background(Color.LightGray.copy(alpha = 0.2f)).padding(16.dp)) {
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth().background(Color.LightGray.copy(alpha = 0.2f))) {
                 selectedShowtime?.let { showtime ->
                     val rows = showtime.seatingChart.size
                     val cols = if (rows > 0) showtime.seatingChart[0].size else 0
-                    
+
                     if (rows > 0 && cols > 0) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(cols),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        val padding = 16.dp
+                        val spacing = 4.dp
+                        val availableWidth = maxWidth - padding * 2
+                        val availableHeight = maxHeight - padding * 2
+                        val cellSize = minOf(
+                            (availableWidth - spacing * (cols - 1)) / cols,
+                            (availableHeight - spacing * (rows - 1)) / rows
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(spacing),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(padding).align(Alignment.Center)
                         ) {
-                            items(rows * cols) { index ->
-                                val r = index / cols
-                                val c = index % cols
-                                val seat = showtime.seatingChart[r][c]
-                                val isSelected = selectedSeats.contains(r to c)
-                                
-                                Button(
-                                    onClick = {
-                                        selectedSeats = if (isSelected) {
-                                            selectedSeats - (r to c)
-                                        } else {
-                                            selectedSeats + (r to c)
+                            repeat(rows) { r ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                                    repeat(cols) { c ->
+                                        val seat = showtime.seatingChart[r][c]
+                                        val isSelected = selectedSeats.contains(r to c)
+                                        Button(
+                                            onClick = {
+                                                selectedSeats = if (isSelected) {
+                                                    selectedSeats - (r to c)
+                                                } else {
+                                                    selectedSeats + (r to c)
+                                                }
+                                            },
+                                            enabled = !seat.isReserved,
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = when {
+                                                    seat.isReserved -> Color.Red
+                                                    isSelected -> Color.Yellow
+                                                    else -> Color.Green
+                                                },
+                                                disabledBackgroundColor = Color.Red
+                                            ),
+                                            modifier = Modifier.size(cellSize),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("${'A' + r}${c + 1}", style = MaterialTheme.typography.caption.copy(fontWeight = FontWeight.Bold), color = Color.Black)
                                         }
-                                    },
-                                    enabled = !seat.isReserved,
-                                    colors = ButtonDefaults.buttonColors(
-                                        backgroundColor = when {
-                                            seat.isReserved -> Color.Red
-                                            isSelected -> Color.Yellow
-                                            else -> Color.Green
-                                        },
-                                        disabledBackgroundColor = Color.Red
-                                    ),
-                                    modifier = Modifier.aspectRatio(1f),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("${'A' + r}${c + 1}", style = MaterialTheme.typography.caption, color = if (isSelected) Color.Black else Color.White)
+                                    }
                                 }
                             }
                         }
@@ -188,7 +207,7 @@ fun TicketingScreen() {
             text = {
                 Column {
                     Text("Movie: ${showtime.movie.name}")
-                    Text("Time: ${showtime.startTime}")
+                    Text("Time: ${showtime.startTime.format(DISPLAY_FORMAT)}")
                     Text("Seats: ${selectedSeats.joinToString(", ") { (r, c) -> "${'A' + r}${c + 1}" }}")
                     Text("Total Price: $${"%.2f".format(selectedSeats.size * showtime.unitPrice)}")
                 }
@@ -196,11 +215,13 @@ fun TicketingScreen() {
             confirmButton = {
                 Button(onClick = {
                     showConfirmationDialog = false
-                    val result = bookingService.sellTickets(showtime, selectedSeats.toList())
-                    resultMessage = result
-                    if (result.contains("successfully")) {
+                    val receipt = bookingService.sellTickets(showtime, selectedSeats.toList())
+                    lastReceipt = receipt
+                    if (receipt != null) {
                         selectedShowtime = ShowtimeRepository.getAllShowtimes().find { it.id == showtime.id }
                         selectedSeats = setOf()
+                    } else {
+                        saleFailedMessage = "Failed to sell tickets. One or more seats are already reserved."
                     }
                     showResultDialog = true
                 }) {
@@ -216,15 +237,107 @@ fun TicketingScreen() {
     }
 
     if (showResultDialog) {
+        val receipt = lastReceipt
         AlertDialog(
             onDismissRequest = { showResultDialog = false },
-            title = { Text(if (resultMessage.contains("successfully")) "Success" else "Failure") },
-            text = { Text(resultMessage) },
-            confirmButton = {
-                Button(onClick = { showResultDialog = false }) {
-                    Text("OK")
+            title = null,
+            text = {
+                if (receipt != null) {
+                    val qrImage = remember(receipt.confirmationCode) {
+                        generateQrImage(receipt.confirmationCode, size = 200)
+                    }
+                    Column(
+                        modifier = Modifier.width(380.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        // Header
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(MaterialTheme.colors.primary)
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "CANDY CINEMA",
+                                style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold, letterSpacing = 3.sp),
+                                color = Color.White
+                            )
+                        }
+
+                        // Ticket body
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .border(1.dp, MaterialTheme.colors.primary.copy(alpha = 0.3f))
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(receipt.movieName, style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold))
+                            Text(receipt.startTime, style = MaterialTheme.typography.body2)
+                            Text("Seats: ${receipt.seatNames.joinToString(", ")}", style = MaterialTheme.typography.body2)
+                            Text("Total: $${"%.2f".format(receipt.totalPrice)}", style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold))
+                        }
+
+                        // Tear line
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            repeat(32) {
+                                Text("- ", style = MaterialTheme.typography.caption, color = Color.LightGray)
+                            }
+                        }
+
+                        // QR + code section
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .border(1.dp, MaterialTheme.colors.primary.copy(alpha = 0.3f))
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            androidx.compose.foundation.Image(
+                                bitmap = qrImage.toComposeImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier.size(160.dp)
+                            )
+                            Text(
+                                receipt.confirmationCode,
+                                style = MaterialTheme.typography.h6.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    letterSpacing = 2.sp
+                                ),
+                                color = MaterialTheme.colors.primary
+                            )
+                            Text(
+                                "Present at the theater entrance",
+                                style = MaterialTheme.typography.caption,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                } else {
+                    Text(saleFailedMessage)
                 }
-            }
+            },
+            confirmButton = {
+                val receipt = lastReceipt
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (receipt != null) {
+                        Button(onClick = {
+                            val qrImage = generateQrImage(receipt.confirmationCode, size = 400)
+                            printTicket(receipt, qrImage)
+                        }) {
+                            Text("Print Ticket")
+                        }
+                    }
+                    OutlinedButton(onClick = { showResultDialog = false }) {
+                        Text("Done")
+                    }
+                }
+            },
+            dismissButton = null
         )
     }
 }

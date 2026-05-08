@@ -43,6 +43,10 @@ dependencies {
     implementation("io.ktor:ktor-server-swagger:${ktorVersion}")
     implementation("io.ktor:ktor-server-openapi:${ktorVersion}")
 
+    // QR code generation
+    implementation("com.google.zxing:core:3.5.2")
+    implementation("com.google.zxing:javase:3.5.2")
+
     // Compose Desktop
     implementation(compose.desktop.currentOs)
 }

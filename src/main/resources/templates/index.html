@@ -102,7 +102,7 @@
       const status = document.getElementById("status");
 
       try {
-        const response = await fetch("/api/movies");
+        const response = await fetch("/api/movies/active");
 
         if (!response.ok) {
           throw new Error("Failed to fetch movies");
@@ -111,7 +111,7 @@
         const movies = await response.json();
 
         if (!movies.length) {
-          status.textContent = "No movies found.";
+          status.textContent = "No movies currently showing.";
           return;
         }
 

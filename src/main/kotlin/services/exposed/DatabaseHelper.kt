@@ -51,6 +51,11 @@ fun init() {
         } catch (e: Exception) {
             // Column might already exist
         }
+        try {
+            exec("ALTER TABLE tickets ADD COLUMN confirmation_code VARCHAR(20)")
+        } catch (e: Exception) {
+            // Column might already exist
+        }
 
         // Seed initial data if no theaters exist
         if (TheaterTable.selectAll().empty()) {
@@ -141,6 +146,11 @@ fun startApiAndDatabase() {
         }
         try {
             exec("ALTER TABLE movies ADD COLUMN genres TEXT DEFAULT ''")
+        } catch (e: Exception) {
+            // Column might already exist
+        }
+        try {
+            exec("ALTER TABLE tickets ADD COLUMN confirmation_code VARCHAR(20)")
         } catch (e: Exception) {
             // Column might already exist
         }

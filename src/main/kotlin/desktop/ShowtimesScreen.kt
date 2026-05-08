@@ -13,6 +13,7 @@ import edu.teamcandy.models.Showtime
 import edu.teamcandy.services.exposed.MovieRepository
 import edu.teamcandy.services.exposed.ShowtimeRepository
 import edu.teamcandy.services.exposed.TheaterRepository
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -20,12 +21,38 @@ private val DISPLAY_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy  h:mm a")
 
 @Composable
 fun ShowtimesScreen() {
-    var showtimes by remember { mutableStateOf(ShowtimeRepository.getAllShowtimes()) }
+    var allShowtimes by remember { mutableStateOf(ShowtimeRepository.getAllShowtimes()) }
+    val theaters = remember { TheaterRepository.getAllTheaters() }
+    val auditoriumLabels = remember(theaters) {
+        theaters.flatMap { t -> t.auditoriums.map { a -> a.id to "${t.name} — Aud. ${a.number}" } }.toMap()
+    }
+    var showUpcomingOnly by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var banner by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
 
+    val showtimes = if (showUpcomingOnly)
+        allShowtimes.filter { !it.startTime.toLocalDate().isBefore(LocalDate.now()) }
+    else
+        allShowtimes
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Showtimes", style = MaterialTheme.typography.h5, modifier = Modifier.weight(1f))
+            OutlinedButton(
+                onClick = { showUpcomingOnly = true },
+                colors = if (showUpcomingOnly)
+                    ButtonDefaults.outlinedButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.15f))
+                else
+                    ButtonDefaults.outlinedButtonColors()
+            ) { Text("Upcoming") }
+            OutlinedButton(
+                onClick = { showUpcomingOnly = false },
+                colors = if (!showUpcomingOnly)
+                    ButtonDefaults.outlinedButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.15f))
+                else
+                    ButtonDefaults.outlinedButtonColors()
+            ) { Text("All") }
             Button(onClick = { showAddDialog = true }) { Text("Schedule Showtime") }
         }
 
@@ -44,11 +71,13 @@ fun ShowtimesScreen() {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(showtime.movie.name, style = MaterialTheme.typography.subtitle1)
                                 Text(showtime.startTime.format(DISPLAY_FORMAT), style = MaterialTheme.typography.body2)
-                                Text("Auditorium ID: ${showtime.auditoriumId}", style = MaterialTheme.typography.caption)
+                                Text(auditoriumLabels[showtime.auditoriumId] ?: "Auditorium ${showtime.auditoriumId}", style = MaterialTheme.typography.caption)
                             }
                             OutlinedButton(onClick = {
-                                ShowtimeRepository.deleteShowtime(showtime.id)
-                                showtimes = ShowtimeRepository.getAllShowtimes()
+                                val success = ShowtimeRepository.deleteShowtime(showtime.id)
+                                allShowtimes = ShowtimeRepository.getAllShowtimes()
+                                banner = if (success) true to "Showtime removed."
+                                         else false to "Failed to remove showtime."
                             }) { Text("Remove") }
                         }
                     }
@@ -57,20 +86,36 @@ fun ShowtimesScreen() {
         }
     }
 
+    banner?.let { (isSuccess, msg) ->
+        StatusBanner(
+            message = msg,
+            isSuccess = isSuccess,
+            onDismiss = { banner = null },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+} // closes Box
+
     if (showAddDialog) {
         AddShowtimeDialog(
             onDismiss = { showAddDialog = false },
             onConfirm = { showtime ->
-                ShowtimeRepository.addShowtime(showtime)
-                showtimes = ShowtimeRepository.getAllShowtimes()
-                showAddDialog = false
+                val id = ShowtimeRepository.addShowtime(showtime)
+                if (id != null) {
+                    allShowtimes = ShowtimeRepository.getAllShowtimes()
+                    showAddDialog = false
+                    banner = true to "Showtime scheduled for ${showtime.movie.name}."
+                    true
+                } else {
+                    false
+                }
             }
         )
     }
 }
 
 @Composable
-fun AddShowtimeDialog(onDismiss: () -> Unit, onConfirm: (Showtime) -> Unit) {
+fun AddShowtimeDialog(onDismiss: () -> Unit, onConfirm: (Showtime) -> Boolean) {
     val movies = remember { MovieRepository.getAllMovies() }
     val theaters = remember { TheaterRepository.getAllTheaters() }
 
@@ -92,6 +137,7 @@ fun AddShowtimeDialog(onDismiss: () -> Unit, onConfirm: (Showtime) -> Unit) {
     var hourExpanded by remember { mutableStateOf(false) }
     var minuteExpanded by remember { mutableStateOf(false) }
     var amPmExpanded by remember { mutableStateOf(false) }
+    var scheduleError by remember { mutableStateOf<String?>(null) }
 
     val months = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
     val daysInMonth = java.time.YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
@@ -222,24 +268,31 @@ fun AddShowtimeDialog(onDismiss: () -> Unit, onConfirm: (Showtime) -> Unit) {
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val movie = selectedMovie ?: return@Button
-                val audId = selectedAuditoriumId ?: return@Button
-                val hour24 = when {
-                    selectedAmPm == "AM" && selectedHour == 12 -> 0
-                    selectedAmPm == "PM" && selectedHour != 12 -> selectedHour + 12
-                    else -> selectedHour
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                scheduleError?.let {
+                    Text(it, color = MaterialTheme.colors.error, style = MaterialTheme.typography.caption)
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
-                val time = LocalDateTime.of(selectedYear, selectedMonth, selectedDay, hour24, selectedMinute)
-                val aud = allAuditoriums.first { it.second.id == audId }.second
-                val showtime = Showtime(
-                    movie = movie,
-                    startTime = time,
-                    auditoriumId = audId,
-                    seatingChart = List(aud.rows) { r -> List(aud.seatsPerRow) { c -> edu.teamcandy.models.Seat(r, c) } }
-                )
-                onConfirm(showtime)
-            }) { Text("Schedule") }
+                Button(onClick = {
+                    val movie = selectedMovie ?: return@Button
+                    val audId = selectedAuditoriumId ?: return@Button
+                    val hour24 = when {
+                        selectedAmPm == "AM" && selectedHour == 12 -> 0
+                        selectedAmPm == "PM" && selectedHour != 12 -> selectedHour + 12
+                        else -> selectedHour
+                    }
+                    val time = LocalDateTime.of(selectedYear, selectedMonth, selectedDay, hour24, selectedMinute)
+                    val aud = allAuditoriums.first { it.second.id == audId }.second
+                    val showtime = Showtime(
+                        movie = movie,
+                        startTime = time,
+                        auditoriumId = audId,
+                        seatingChart = List(aud.rows) { r -> List(aud.seatsPerRow) { c -> edu.teamcandy.models.Seat(r, c) } }
+                    )
+                    val success = onConfirm(showtime)
+                    if (!success) scheduleError = "This auditorium already has a showtime during that time."
+                }) { Text("Schedule") }
+            }
         },
         dismissButton = { OutlinedButton(onClick = onDismiss) { Text("Cancel") } }
     )

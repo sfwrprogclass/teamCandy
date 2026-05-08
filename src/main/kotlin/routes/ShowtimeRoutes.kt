@@ -1,5 +1,9 @@
 package edu.teamcandy.routes
 
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.client.j2se.MatrixToImageWriter
+import com.google.zxing.qrcode.QRCodeWriter
 import edu.teamcandy.exposed.AuditoriumTable
 import edu.teamcandy.exposed.MovieTable
 import edu.teamcandy.exposed.PaymentMethodTable
@@ -9,7 +13,9 @@ import edu.teamcandy.models.Movie
 import edu.teamcandy.models.Payment
 import edu.teamcandy.models.Seat
 import edu.teamcandy.models.Showtime
+import edu.teamcandy.models.TicketResponse
 import edu.teamcandy.repository.ShowtimeRepositoryInterface
+import edu.teamcandy.services.exposed.ShowtimeRepository
 import edu.teamcandy.services.exposed.TheaterRepository.getAuditoriumById
 import edu.teamcandy.services.exposed.TheaterRepository.getTheaterByAuditoriums
 import edu.teamcandy.services.exposed.TheaterRepository.getTheaterById
@@ -20,10 +26,12 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.LocalDateTime
+import java.io.ByteArrayOutputStream
+import java.time.format.DateTimeFormatter
+import java.util.Base64
+import javax.imageio.ImageIO
 
 fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterface) {
     get("/api/movies/{id}/showtimes") {
@@ -179,28 +187,37 @@ fun Route.showtimeRoutes(showtimeRepositoryInterface: ShowtimeRepositoryInterfac
             return@post
         }
 
-        transaction {
-            for (seat in request.seats) {
-                val alreadyReserved = TicketTable
-                    .selectAll()
-                    .where {
-                        (TicketTable.showtimeId eq showtimeId) and
-                                (TicketTable.row eq seat.row) and
-                                (TicketTable.seatNumber eq seat.number)
-                    }
-                    .count() > 0
-
-                if (!alreadyReserved) {
-                    TicketTable.insert {
-                        it[TicketTable.showtimeId] = showtimeId
-                        it[TicketTable.row] = seat.row
-                        it[TicketTable.seatNumber] = seat.number
-                        it[TicketTable.soldAt] = LocalDateTime.now()
-                    }
-                }
-            }
+        val seats = request.seats.map { Pair(it.row, it.number) }
+        val confirmationCode = ShowtimeRepository.reserveSeats(showtimeId, seats)
+        if (confirmationCode == null) {
+            call.respond(HttpStatusCode.Conflict, "One or more seats are no longer available")
+            return@post
         }
 
-        call.respond(HttpStatusCode.OK, "Payment accepted and seats reserved")
+        val showtime = ShowtimeRepository.getAllShowtimes().firstOrNull { it.id == showtimeId }
+        if (showtime == null) {
+            call.respond(HttpStatusCode.NotFound, "Showtime not found")
+            return@post
+        }
+
+        val bitMatrix = QRCodeWriter().encode(
+            confirmationCode, BarcodeFormat.QR_CODE, 300, 300,
+            mapOf(EncodeHintType.MARGIN to 1)
+        )
+        val baos = ByteArrayOutputStream()
+        ImageIO.write(MatrixToImageWriter.toBufferedImage(bitMatrix), "PNG", baos)
+        val qrBase64 = Base64.getEncoder().encodeToString(baos.toByteArray())
+
+        val fmt = DateTimeFormatter.ofPattern("MMM d, yyyy  h:mm a")
+        val seatNames = request.seats.map { "${'A' + it.row}${it.number + 1}" }
+
+        call.respond(TicketResponse(
+            confirmationCode = confirmationCode,
+            movieName = showtime.movie.name,
+            startTime = showtime.startTime.format(fmt),
+            seats = seatNames,
+            totalPrice = seats.size * showtime.unitPrice,
+            qrCodeBase64 = qrBase64
+        ))
     }
 }
