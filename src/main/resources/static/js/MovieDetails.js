@@ -490,6 +490,24 @@ payButton.onclick = async function () {
             body: JSON.stringify(requestBody)
         });
 
+        if (response.status == 409) {
+            dialogTitle.innerHTML = "Seats Already Reserved";
+            dialogMessage.innerHTML = "One or more selected seats were already reserved. Please try again.";
+
+            dialogSpinner.classList.add("hidden");
+            dialogActions.classList.remove("hidden");
+
+            backToPaymentButton.classList.remove("hidden");
+            returnHomeButton.classList.add("hidden");
+
+            return;
+        }
+
+        if (response.status == 401) {
+            showFailedDialog();
+            return;
+        }
+
         if (response.ok == false) {
             showFailedDialog();
             return;
